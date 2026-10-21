@@ -458,7 +458,6 @@ body.engaged.arrived .hud-read{left:calc(var(--l) + 4px);transform:none;bottom:c
   <div class="brand"><canvas class="mlogo" id="bLogo" width="64" height="64"></canvas><b>WORLDMIND</b></div>
   <div class="live"><i class="dot"></i><span class="lbl">LIVE</span><span id="upd" hidden></span></div>
   <div class="spacer"></div>
-  <button class="nbtn dl" id="dlBtn" hidden><span class="dl-i"></span><span>DOWNLOAD</span></button>
   <button class="nbtn" id="listBtn" aria-pressed="false" aria-controls="panel"><span class="nb-i"></span><span data-i="news"></span></button>
 </header>
 
@@ -493,18 +492,6 @@ body.engaged.arrived .hud-read{left:calc(var(--l) + 4px);transform:none;bottom:c
   <div id="tvBody"></div>
 </section>
 <button class="bigbtn" id="fZoom" hidden></button>
-<div id="iosGuide" hidden>
-  <div class="ig-box">
-    <canvas class="mlogo ig-logo" id="igLogo" width="96" height="96"></canvas>
-    <h3>Install WorldMind</h3>
-    <ol>
-      <li>Tap the <b>Share</b> button <span class="ig-share"></span> at the bottom of Safari.</li>
-      <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
-      <li>Tap <b>Add</b>. WorldMind appears on your home screen.</li>
-    </ol>
-    <button class="ig-ok" id="igOk">OK</button>
-  </div>
-</div>
 <div id="toast" hidden></div>
 
 <script>
@@ -2767,24 +2754,8 @@ function miniLogo(cv) {
 }
 miniLogo($("bLogo")); miniLogo($("pLogo"));
 
-/* ---------- Uygulama olarak indir: Android/Chrome'da gerçek kurulum penceresi, iPhone'da 3 adımlık rehber ---------- */
-(() => {
-  const btn = $("dlBtn");
-  const standalone = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
-  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const web = location.protocol === "https:" || location.hostname === "localhost";
-  if ("serviceWorker" in navigator && web) navigator.serviceWorker.register("wm-sw.js").catch(() => {});
-  let deferred = null;
-  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; if (!standalone) btn.hidden = false; });
-  addEventListener("appinstalled", () => { btn.hidden = true; deferred = null; toast("WorldMind is on your home screen.", 5000); });
-  if (!standalone && web) btn.hidden = false;                          // indirme düğmesi her zaman görünür (uygulamanın içinden açılınca gizli)
-  btn.addEventListener("click", async () => {
-    if (deferred) { deferred.prompt(); const r = await deferred.userChoice.catch(() => null); if (r?.outcome === "accepted") btn.hidden = true; deferred = null; return; }
-    if (ios) { $("iosGuide").hidden = false; miniLogo($("igLogo")); return; }
-    toast("Open Chrome's ⋮ menu and tap “Install app” or “Add to Home screen”.", 8000);
-  });
-  $("igOk").addEventListener("click", () => { $("iosGuide").hidden = true; });
-})();
+/* ---------- Uygulama: kurulabilir uygulama ve APK için arka plan çalışanı (ekranda düğme yok) ---------- */
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("wm-sw.js").catch(() => {});
 /* ---------- Başlat ---------- */
 renderStatic(); renderChips(); renderSrcs(); renderList();
 refreshAll(); watchWiki();
