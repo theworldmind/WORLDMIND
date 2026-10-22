@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WorldMind Privacy</title>
+<meta name="theme-color" content="#020304">
+<link rel="icon" type="image/png" href="wm-icon-192.png">
+<style>
+:root{--bg:#020304;--panel:rgba(7,12,18,.92);--line:rgba(140,228,255,.18);--fg:#e8f1f6;--soft:#b9c8d2;--mute:#7f95a3;--cy:#7fdcf5;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 "Inter",system-ui,-apple-system,"Segoe UI","Noto Sans","Noto Sans Arabic","Noto Sans SC",sans-serif}
+body{background:radial-gradient(ellipse at 50% -10%,rgba(60,170,210,.12),transparent 55%),var(--bg);min-height:100vh}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 56px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font:300 15px/1 "Jost","Inter",sans-serif;letter-spacing:.46em;color:#eef4f8;text-shadow:0 0 14px rgba(125,216,255,.45);direction:ltr}
+.langs{margin-inline-start:auto;display:flex;flex-wrap:wrap;gap:4px}
+.langs button{font:500 12.5px/1 inherit;font-family:inherit;color:var(--soft);background:rgba(150,172,196,.07);border:1px solid rgba(150,232,255,.14);border-radius:999px;padding:7px 11px;cursor:pointer}
+.langs button[aria-pressed="true"]{color:#fff;border-color:rgba(140,228,255,.6);background:rgba(70,205,245,.2)}
+.langs button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+h1{margin:6px 0 0;font:700 clamp(26px,5vw,36px)/1.15 "Inter",system-ui,sans-serif;letter-spacing:-.02em;text-wrap:balance}
+.upd{margin:0;color:var(--mute);font-size:13px;letter-spacing:.04em}
+.lead{margin:0;font-size:17.5px;color:#f3f8fb;padding:18px 20px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+main{display:grid;gap:20px}
+section{display:grid;gap:8px}
+h2{margin:0;font:600 12px/1.3 ui-monospace,"IBM Plex Mono",Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--cy)}
+p,li{margin:0;color:var(--soft)}
+ul{margin:0;padding-inline-start:20px;display:grid;gap:4px}
+footer{color:var(--mute);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+[dir="rtl"] body{text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="brand">WORLDMIND</span><nav class="langs" id="langs" aria-label="Language"></nav></header>
+  <main id="doc"></main>
+  <footer>© 2026 WorldMind</footer>
+</div>
+<script>
+const SERVICES = "Esri World Imagery · Cesium ion (Bing Maps, Google Photorealistic 3D Tiles) · NASA GIBS · live-cloud-maps (EUMETSAT) · Bluesky · public RSS feeds and Google News · Wikipedia · GDACS · NASA EONET · USGS · FreeNewsApi · Newsline · Jina Reader · Photon (OpenStreetMap) · Open-Meteo · Google Translate · YouTube (via Piped / Invidious) · Google Fonts · jsDelivr";
+const D = {
+  en: { n: "English", t: "Privacy Policy", u: "Last updated: 22 October 2026",
+    lead: "WorldMind does not ask for, collect, store on servers, share or sell any personal data. There are no accounts, no ads, no analytics and no tracking.",
+    s: [["What stays on your device", "The app saves a few things only on your own device so it works faster: your settings (language, display options, card size) and caches of place lookups and article summaries. They never leave your device. You can delete them at any time by clearing the app's data or your browser's site data."],
+      ["Services the app connects to", "To show the map and the news, the app loads public content directly from these services: " + SERVICES + ". As with any website, these services receive your IP address and basic browser information when content is requested. WorldMind does not send them any personal information. Their own privacy policies apply."],
+      ["Location", "WorldMind does not access your device's location. Map positions shown in the app are the locations of news events, not your location."],
+      ["Children", "WorldMind is a general news application and is not directed at children under 13. It does not collect data from anyone, including children."],
+      ["Content", "Events are shown as short, factual summaries with links to their original public sources. The app does not show graphic content."],
+      ["Changes", "If this policy changes, the new version will be published on this page with a new date."],
+      ["Contact", "For questions about this policy, use the developer contact email on WorldMind's Google Play page."]] },
+  tr: { n: "Türkçe", t: "Gizlilik Politikası", u: "Son güncelleme: 22 Ekim 2026",
+    lead: "WorldMind hiçbir kişisel veri istemez, toplamaz, sunucularda saklamaz, paylaşmaz ya da satmaz. Hesap, reklam, analiz ve takip yoktur.",
+    s: [["Cihazında kalanlar", "Uygulama daha hızlı çalışmak için yalnızca kendi cihazına birkaç şey kaydeder: ayarların (dil, görünüm seçenekleri, kart boyutu) ve yer aramaları ile haber özetlerinin önbelleği. Bunlar cihazından asla çıkmaz. Uygulama verilerini ya da tarayıcının site verilerini temizleyerek istediğin zaman silebilirsin."],
+      ["Uygulamanın bağlandığı servisler", "Haritayı ve haberleri göstermek için uygulama herkese açık içerikleri doğrudan şu servislerden yükler: " + SERVICES + ". Her web sitesinde olduğu gibi, içerik istendiğinde bu servisler IP adresini ve temel tarayıcı bilgisini alır. WorldMind onlara hiçbir kişisel bilgi göndermez. Kendi gizlilik politikaları geçerlidir."],
+      ["Konum", "WorldMind cihazının konumuna erişmez. Haritada gösterilen yerler senin konumun değil, haber olaylarının konumudur."],
+      ["Çocuklar", "WorldMind genel bir haber uygulamasıdır ve 13 yaş altındaki çocuklara yönelik değildir. Çocuklar dahil hiç kimseden veri toplamaz."],
+      ["İçerik", "Olaylar, orijinal açık kaynaklarına bağlantılarla birlikte kısa ve olgusal özetler olarak gösterilir. Uygulama sarsıcı görüntüler göstermez."],
+      ["Değişiklikler", "Bu politika değişirse yeni hâli bu sayfada yeni tarihiyle yayımlanır."],
+      ["İletişim", "Bu politikayla ilgili soruların için WorldMind'ın Google Play sayfasındaki geliştirici e-postasını kullanabilirsin."]] },
+  it: { n: "Italiano", t: "Informativa sulla privacy", u: "Ultimo aggiornamento: 22 ottobre 2026",
+    lead: "WorldMind non chiede, raccoglie, conserva su server, condivide né vende dati personali. Non ci sono account, pubblicità, statistiche o tracciamento.",
+    s: [["Cosa resta sul tuo dispositivo", "L'app salva solo sul tuo dispositivo alcune informazioni per funzionare più velocemente: le impostazioni (lingua, opzioni di visualizzazione, dimensione della scheda) e la cache delle ricerche di luoghi e dei riassunti degli articoli. Non lasciano mai il dispositivo. Puoi eliminarle in qualsiasi momento cancellando i dati dell'app o del sito nel browser."],
+      ["Servizi a cui l'app si collega", "Per mostrare la mappa e le notizie, l'app carica contenuti pubblici direttamente da questi servizi: " + SERVICES + ". Come per ogni sito web, questi servizi ricevono il tuo indirizzo IP e informazioni di base sul browser quando viene richiesto un contenuto. WorldMind non invia loro alcuna informazione personale. Valgono le loro informative sulla privacy."],
+      ["Posizione", "WorldMind non accede alla posizione del tuo dispositivo. I punti sulla mappa sono i luoghi degli eventi, non la tua posizione."],
+      ["Minori", "WorldMind è un'app di notizie generali e non è rivolta ai minori di 13 anni. Non raccoglie dati da nessuno, minori compresi."],
+      ["Contenuti", "Gli eventi sono mostrati come brevi riassunti fattuali con link alle fonti pubbliche originali. L'app non mostra contenuti espliciti."],
+      ["Modifiche", "Se questa informativa cambia, la nuova versione sarà pubblicata su questa pagina con una nuova data."],
+      ["Contatti", "Per domande su questa informativa, usa l'email dello sviluppatore indicata nella pagina Google Play di WorldMind."]] },
+  ru: { n: "Русский", t: "Политика конфиденциальности", u: "Последнее обновление: 22 октября 2026 г.",
+    lead: "WorldMind не запрашивает, не собирает, не хранит на серверах, не передаёт и не продаёт персональные данные. Нет аккаунтов, рекламы, аналитики и отслеживания.",
+    s: [["Что хранится на вашем устройстве", "Приложение сохраняет только на вашем устройстве немного данных для быстрой работы: настройки (язык, параметры отображения, размер карточки) и кэш поиска мест и кратких изложений статей. Эти данные никогда не покидают устройство. Их можно удалить в любой момент, очистив данные приложения или сайта в браузере."],
+      ["Сервисы, к которым подключается приложение", "Чтобы показать карту и новости, приложение загружает общедоступный контент напрямую из этих сервисов: " + SERVICES + ". Как и при посещении любого сайта, эти сервисы получают ваш IP-адрес и базовые сведения о браузере при запросе контента. WorldMind не передаёт им никаких персональных данных. Действуют их собственные политики конфиденциальности."],
+      ["Местоположение", "WorldMind не обращается к местоположению вашего устройства. Точки на карте — это места событий, а не ваше местоположение."],
+      ["Дети", "WorldMind — новостное приложение общего назначения, не предназначенное для детей младше 13 лет. Оно ни у кого не собирает данные, в том числе у детей."],
+      ["Содержание", "События показываются в виде кратких фактических сводок со ссылками на исходные открытые источники. Приложение не показывает шокирующий контент."],
+      ["Изменения", "Если политика изменится, новая версия будет опубликована на этой странице с новой датой."],
+      ["Контакты", "По вопросам об этой политике пишите на адрес разработчика, указанный на странице WorldMind в Google Play."]] },
+  fr: { n: "Français", t: "Politique de confidentialité", u: "Dernière mise à jour : 22 octobre 2026",
+    lead: "WorldMind ne demande, ne collecte, ne stocke sur des serveurs, ne partage ni ne vend aucune donnée personnelle. Pas de compte, pas de publicité, pas d'analyse, pas de suivi.",
+    s: [["Ce qui reste sur votre appareil", "L'application enregistre uniquement sur votre appareil quelques éléments pour fonctionner plus vite : vos réglages (langue, options d'affichage, taille de la fiche) et un cache des recherches de lieux et des résumés d'articles. Ils ne quittent jamais votre appareil. Vous pouvez les supprimer à tout moment en effaçant les données de l'application ou du site dans le navigateur."],
+      ["Services utilisés par l'application", "Pour afficher la carte et l'actualité, l'application charge des contenus publics directement depuis ces services : " + SERVICES + ". Comme pour tout site web, ces services reçoivent votre adresse IP et des informations de base sur le navigateur lors des requêtes. WorldMind ne leur envoie aucune information personnelle. Leurs propres politiques de confidentialité s'appliquent."],
+      ["Localisation", "WorldMind n'accède pas à la position de votre appareil. Les points sur la carte sont les lieux des événements, pas votre position."],
+      ["Enfants", "WorldMind est une application d'actualité générale qui ne s'adresse pas aux enfants de moins de 13 ans. Elle ne collecte de données auprès de personne, enfants compris."],
+      ["Contenu", "Les événements sont présentés sous forme de courts résumés factuels avec des liens vers leurs sources publiques d'origine. L'application n'affiche pas de contenu choquant."],
+      ["Modifications", "Si cette politique change, la nouvelle version sera publiée sur cette page avec une nouvelle date."],
+      ["Contact", "Pour toute question, utilisez l'adresse e-mail du développeur indiquée sur la page Google Play de WorldMind."]] },
+  es: { n: "Español", t: "Política de privacidad", u: "Última actualización: 22 de octubre de 2026",
+    lead: "WorldMind no pide, recopila, almacena en servidores, comparte ni vende datos personales. No hay cuentas, anuncios, analíticas ni seguimiento.",
+    s: [["Lo que se queda en tu dispositivo", "La aplicación guarda solo en tu dispositivo algunas cosas para funcionar más rápido: tus ajustes (idioma, opciones de visualización, tamaño de la ficha) y una caché de búsquedas de lugares y resúmenes de artículos. Nunca salen de tu dispositivo. Puedes borrarlos cuando quieras eliminando los datos de la aplicación o del sitio en el navegador."],
+      ["Servicios a los que se conecta la aplicación", "Para mostrar el mapa y las noticias, la aplicación carga contenido público directamente de estos servicios: " + SERVICES + ". Como en cualquier sitio web, estos servicios reciben tu dirección IP e información básica del navegador al solicitar contenido. WorldMind no les envía ninguna información personal. Se aplican sus propias políticas de privacidad."],
+      ["Ubicación", "WorldMind no accede a la ubicación de tu dispositivo. Los puntos del mapa son los lugares de los eventos, no tu ubicación."],
+      ["Menores", "WorldMind es una aplicación de noticias general y no está dirigida a menores de 13 años. No recopila datos de nadie, incluidos los menores."],
+      ["Contenido", "Los eventos se muestran como resúmenes breves y objetivos con enlaces a sus fuentes públicas originales. La aplicación no muestra contenido explícito."],
+      ["Cambios", "Si esta política cambia, la nueva versión se publicará en esta página con una nueva fecha."],
+      ["Contacto", "Para preguntas sobre esta política, usa el correo del desarrollador que aparece en la página de WorldMind en Google Play."]] },
+  zh: { n: "中文", t: "隐私政策", u: "最后更新：2026年10月22日",
+    lead: "WorldMind 不索取、不收集、不在服务器上存储、不分享也不出售任何个人数据。没有账户、广告、统计分析或跟踪。",
+    s: [["保存在你设备上的内容", "为了运行更快，应用只在你的设备上保存少量内容：你的设置（语言、显示选项、卡片大小）以及地点查询和文章摘要的缓存。这些内容不会离开你的设备。你可以随时通过清除应用数据或浏览器的网站数据将其删除。"],
+      ["应用连接的服务", "为显示地图和新闻，应用会直接从以下服务加载公开内容：" + SERVICES + "。与访问任何网站一样，请求内容时这些服务会收到你的 IP 地址和基本浏览器信息。WorldMind 不会向它们发送任何个人信息。适用其各自的隐私政策。"],
+      ["位置", "WorldMind 不会访问你设备的位置。地图上的点是新闻事件的位置，而不是你的位置。"],
+      ["儿童", "WorldMind 是一款综合新闻应用，不面向 13 岁以下儿童。它不会从任何人（包括儿童）处收集数据。"],
+      ["内容", "事件以简短、客观的摘要形式展示，并附有原始公开来源的链接。应用不显示血腥暴力内容。"],
+      ["变更", "如本政策有变更，新版本将在本页面以新的日期发布。"],
+      ["联系方式", "如对本政策有疑问，请通过 WorldMind 在 Google Play 页面上的开发者邮箱联系。"]] },
+  ar: { n: "العربية", t: "سياسة الخصوصية", u: "آخر تحديث: 22 أكتوبر 2026",
+    lead: "لا يطلب WorldMind أي بيانات شخصية ولا يجمعها ولا يخزنها على خوادم ولا يشاركها ولا يبيعها. لا توجد حسابات ولا إعلانات ولا تحليلات ولا تتبع.",
+    s: [["ما يبقى على جهازك", "يحفظ التطبيق على جهازك فقط بعض الأشياء ليعمل بسرعة أكبر: إعداداتك (اللغة وخيارات العرض وحجم البطاقة) وذاكرة مؤقتة لعمليات البحث عن الأماكن وملخصات المقالات. لا تغادر هذه البيانات جهازك أبدًا، ويمكنك حذفها في أي وقت بمسح بيانات التطبيق أو بيانات الموقع في المتصفح."],
+      ["الخدمات التي يتصل بها التطبيق", "لعرض الخريطة والأخبار يحمّل التطبيق محتوى عامًا مباشرة من هذه الخدمات: " + SERVICES + ". وكما في أي موقع ويب، تتلقى هذه الخدمات عنوان IP الخاص بك ومعلومات أساسية عن المتصفح عند طلب المحتوى. لا يرسل WorldMind إليها أي معلومات شخصية، وتنطبق عليها سياسات الخصوصية الخاصة بها."],
+      ["الموقع", "لا يصل WorldMind إلى موقع جهازك. النقاط على الخريطة هي أماكن الأحداث الإخبارية وليست موقعك."],
+      ["الأطفال", "WorldMind تطبيق أخبار عام وغير موجّه للأطفال دون 13 عامًا، ولا يجمع بيانات من أي شخص بمن فيهم الأطفال."],
+      ["المحتوى", "تُعرض الأحداث في ملخصات قصيرة وواقعية مع روابط إلى مصادرها العامة الأصلية. لا يعرض التطبيق محتوى صادمًا."],
+      ["التغييرات", "إذا تغيرت هذه السياسة فستُنشر النسخة الجديدة في هذه الصفحة بتاريخ جديد."],
+      ["التواصل", "للأسئلة حول هذه السياسة استخدم البريد الإلكتروني للمطوّر المذكور في صفحة WorldMind على Google Play."]] },
+  de: { n: "Deutsch", t: "Datenschutzerklärung", u: "Zuletzt aktualisiert: 22. Oktober 2026",
+    lead: "WorldMind fragt keine personenbezogenen Daten ab, erhebt sie nicht, speichert sie nicht auf Servern, gibt sie nicht weiter und verkauft sie nicht. Es gibt keine Konten, keine Werbung, keine Analyse und kein Tracking.",
+    s: [["Was auf deinem Gerät bleibt", "Die App speichert nur auf deinem eigenen Gerät einige Dinge, damit sie schneller läuft: deine Einstellungen (Sprache, Anzeigeoptionen, Kartengröße) sowie einen Zwischenspeicher für Ortssuchen und Artikelzusammenfassungen. Diese Daten verlassen dein Gerät nie. Du kannst sie jederzeit löschen, indem du die App-Daten oder die Websitedaten im Browser löschst."],
+      ["Dienste, mit denen sich die App verbindet", "Um die Karte und die Nachrichten anzuzeigen, lädt die App öffentliche Inhalte direkt von diesen Diensten: " + SERVICES + ". Wie bei jeder Website erhalten diese Dienste beim Abruf deine IP-Adresse und grundlegende Browserinformationen. WorldMind sendet ihnen keine personenbezogenen Daten. Es gelten deren eigene Datenschutzerklärungen."],
+      ["Standort", "WorldMind greift nicht auf den Standort deines Geräts zu. Die Punkte auf der Karte sind die Orte der Ereignisse, nicht dein Standort."],
+      ["Kinder", "WorldMind ist eine allgemeine Nachrichten-App und richtet sich nicht an Kinder unter 13 Jahren. Sie erhebt von niemandem Daten, auch nicht von Kindern."],
+      ["Inhalte", "Ereignisse werden als kurze, sachliche Zusammenfassungen mit Links zu den ursprünglichen öffentlichen Quellen gezeigt. Die App zeigt keine drastischen Inhalte."],
+      ["Änderungen", "Wenn sich diese Erklärung ändert, wird die neue Fassung auf dieser Seite mit neuem Datum veröffentlicht."],
+      ["Kontakt", "Bei Fragen zu dieser Erklärung nutze die E-Mail-Adresse des Entwicklers auf der Google-Play-Seite von WorldMind."]] },
+};
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function pick() {
+  const q = new URLSearchParams(location.search).get("lang"); if (D[q]) return q;
+  try { const l = JSON.parse(localStorage.getItem("wm-set") || "{}").lang; if (D[l]) return l; } catch {}
+  const n = (navigator.language || "en").slice(0, 2); return D[n] ? n : "en";
+}
+function show(l) {
+  const d = D[l]; document.documentElement.lang = l; document.documentElement.dir = l === "ar" ? "rtl" : "ltr"; document.title = "WorldMind · " + d.t;
+  document.getElementById("doc").innerHTML = `<h1>${esc(d.t)}</h1><p class="upd">${esc(d.u)}</p><p class="lead">${esc(d.lead)}</p>` +
+    d.s.map(([h, p]) => `<section><h2>${esc(h)}</h2><p>${esc(p)}</p></section>`).join("");
+  document.querySelectorAll("#langs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.l === l)));
+}
+document.getElementById("langs").innerHTML = Object.entries(D).map(([k, d]) => `<button type="button" data-l="${k}" lang="${k}">${d.n}</button>`).join("");
+document.getElementById("langs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { show(b.dataset.l); try { history.replaceState(null, "", "?lang=" + b.dataset.l); } catch {} } });
+show(pick());
+</script>
+</body>
+</html>

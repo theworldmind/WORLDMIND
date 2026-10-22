@@ -1,4 +1,4 @@
-const C = "wm-shell-v2";
+const C = "wm-shell-v4";
 const LIB = "wm-lib-cesium-1.121.0";   // harita kütüphanesi: sürümü sabit, bir kez iner, cihazda kalır
 const KEEP = [C, LIB];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(C).then((c) => c.addAll(["./", "wm-icon-192.png", "wm-icon-512.png"]).catch(() => {}))); self.skipWaiting(); });
@@ -11,6 +11,8 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (req.mode !== "navigate") return;
-  // Sayfanın kendisi: önce internet (her zaman en yeni sürüm), internet yoksa son kayıtlı sürüm
-  e.respondWith(fetch(req).then((r) => { const cp = r.clone(); caches.open(C).then((c) => c.put("./", cp)); return r; }).catch(() => caches.match("./")));
+  const path = new URL(url).pathname;
+  if (!(path.endsWith("/") || path.endsWith("/index.html"))) return;   // yalnızca uygulama sayfası saklanır (ör. gizlilik sayfası değil)
+  // Sayfanın kendisi: her açılışta sunucudan en yeni sürüm (tarayıcının 10 dakikalık eski kopyası atlanır); internet yoksa son kayıtlı sürüm
+  e.respondWith(fetch(req.url, { cache: "no-cache", credentials: "same-origin" }).then((r) => { const cp = r.clone(); caches.open(C).then((c) => c.put("./", cp)); return r; }).catch(() => caches.match("./")));
 });

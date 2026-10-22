@@ -605,6 +605,83 @@ html,body{background:#020304}
 .seg button[aria-pressed="true"]{background:linear-gradient(180deg,rgba(70,205,245,.3),rgba(70,205,245,.12));color:#fff;box-shadow:inset 0 0 0 1px rgba(140,228,255,.55),0 0 14px rgba(70,205,245,.25)}
 .seg button:focus-visible{outline:2px solid var(--signal);outline-offset:1px}
 .seg-note{margin:0;font:400 11.5px/1.4 var(--f-ui);color:var(--mute)}
+
+/* [2.2] yavaş bağlantı mesajı */
+.sp-slow{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:6px;font:400 13px/1.4 "Inter",system-ui,sans-serif;color:#9fb7c4;text-align:center;max-width:min(86vw,360px)}
+.sp-slow[hidden]{display:none}
+.sp-slow button{font:600 13px "Inter",system-ui,sans-serif;color:#e9fbff;background:rgba(120,215,250,.08);border:1px solid rgba(150,232,255,.5);border-radius:999px;padding:9px 20px;cursor:pointer}
+
+/* ===================== [2.2] Güneş, ayet ve yolculuk ===================== */
+#sunEarth{position:fixed;left:0;top:0;width:256px;height:256px;margin:-128px 0 0 -128px;z-index:2;pointer-events:none;will-change:transform}
+#sunEarth canvas{width:256px;height:256px;display:block}
+#sunEarth.pulse canvas{animation:sunPulse .9s ease-out}
+@keyframes sunPulse{0%{transform:scale(1)}35%{transform:scale(1.25)}100%{transform:scale(1)}}
+body.sunmode #sunEarth,body.sunmode #hud{display:none!important}
+#ss{position:fixed;inset:0;z-index:3;background:#020304;overflow:hidden;transform-origin:50% 53%;touch-action:none;user-select:none;-webkit-user-select:none}
+#ss[hidden]{display:none}
+#ss.enter{animation:ssIn 2.4s cubic-bezier(.2,.7,.2,1) both}
+#ss.leave{animation:ssOut 1.5s cubic-bezier(.5,0,.75,0) both}
+@keyframes ssIn{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+@keyframes ssOut{from{opacity:1;transform:none}to{opacity:0;transform:scale(.35)}}
+.ssl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#ssGold{clip-path:circle(0px at var(--cx) var(--cy));transition:clip-path 3.2s cubic-bezier(.3,.1,.3,1)}
+#ss.gold #ssGold{clip-path:circle(150vmax at var(--cx) var(--cy));animation:ayBreath 6s ease-in-out 3.2s infinite}
+.ssWave{position:absolute;left:var(--cx);top:var(--cy);width:300vmax;height:300vmax;margin:-150vmax 0 0 -150vmax;border-radius:50%;pointer-events:none;opacity:0;transform:scale(.02);
+  background:radial-gradient(circle,rgba(255,200,110,0) 52%,rgba(255,210,130,.07) 62%,rgba(255,220,150,.11) 66%,rgba(255,200,110,0) 70%)}
+#ss.gold .ssWave{animation:ayWave 3.2s cubic-bezier(.3,.1,.3,1) both}
+@keyframes ayWave{0%{opacity:0;transform:scale(.02)}12%{opacity:1}100%{opacity:0;transform:scale(1)}}
+.ssEarth{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 38% 35%,#cfeeff 0%,#3d86d8 45%,#123a74 100%);box-shadow:0 0 14px 4px rgba(110,190,255,.45);
+  transition:left 2.2s cubic-bezier(.2,.7,.2,1),top 2.2s cubic-bezier(.2,.7,.2,1),transform 2.2s cubic-bezier(.2,.7,.2,1)}
+.ssEarth.big{transform:scale(9)}
+.ssEarth::after{content:"";position:absolute;inset:-10px;border-radius:50%;box-shadow:0 0 18px 6px rgba(110,190,255,.35);opacity:.5;animation:ayBreath 3s ease-in-out infinite}
+#ayHaze{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity 2.4s ease;
+  background:radial-gradient(ellipse at 50% 53%,rgba(255,190,90,.1),rgba(255,170,70,.03) 60%,rgba(255,160,60,0) 85%)}
+#ayHaze.on{opacity:1}
+#ayah{position:fixed;left:0;top:0;z-index:4;pointer-events:none;will-change:transform}
+#ayah[hidden]{display:none}
+#ayRot{position:absolute;left:0;top:0;width:0;height:0}
+#ayah.spin #ayRot{animation:aySpin 180s linear infinite}
+@keyframes aySpin{to{transform:rotate(360deg)}}
+#ayGlow,#ayText{position:absolute;left:0;top:0;display:block}
+#ayah.spin #ayGlow{animation:ayBreath 6s ease-in-out infinite}
+@keyframes ayBreath{0%,100%{opacity:1}50%{opacity:.72}}
+#ayah.faint{opacity:.05}
+#ayah.faint #ayGlow{opacity:0!important}
+.ayLight{position:absolute;left:0;top:0;width:calc(var(--rb,200px) * 2);height:calc(var(--rb,200px) * 2);margin:calc(var(--rb,200px) * -1) 0 0 calc(var(--rb,200px) * -1);border-radius:50%;opacity:0;
+  box-shadow:0 0 30px 6px rgba(255,205,120,.5),inset 0 0 30px 6px rgba(255,205,120,.35);border:1.5px solid rgba(255,225,160,.8);transform:scale(.15)}
+#ayah.light .ayLight{animation:ayLightA 1.3s cubic-bezier(.2,.7,.2,1) both}
+@keyframes ayLightA{0%{opacity:0;transform:scale(.15)}30%{opacity:1}100%{opacity:0;transform:scale(1.02)}}
+#ayMeal{position:fixed;left:50%;bottom:calc(var(--bot) + 24px);transform:translateX(-50%);width:min(560px,calc(100vw - 32px));z-index:9;padding:18px 22px;border-radius:20px;
+  border:1px solid rgba(255,210,130,.45);background:linear-gradient(180deg,rgba(14,11,6,.94),rgba(6,5,3,.94));box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 34px rgba(255,190,90,.18);
+  color:#f6ecd8;display:grid;gap:8px;animation:mealIn .9s ease both}
+#ayMeal[hidden]{display:none}
+@keyframes mealIn{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+#ayRef{font:600 11px var(--f-data);letter-spacing:.16em;text-transform:uppercase;color:#ffd58a}
+#ayTxt{margin:0;font:400 17px/1.6 var(--f-ui);color:#fbf3e2}
+#ayTxt[dir="rtl"]{font:400 24px/1.9 "Amiri Quran","Amiri","Noto Naskh Arabic",serif;text-align:center}
+#aySrc{font:500 11px var(--f-data);letter-spacing:.08em;color:#b9a77f}
+#holdRing{position:fixed;width:104px;height:104px;margin:-52px 0 0 -52px;z-index:50;pointer-events:none;animation:holdIn .4s ease both}
+#holdRing[hidden]{display:none}
+@keyframes holdIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+#holdRing svg{width:100%;height:100%;overflow:visible}
+#holdRing circle{fill:none;stroke:#ffd98a;stroke-width:3;stroke-linecap:round;stroke-dasharray:276.5;stroke-dashoffset:276.5;transform:rotate(-90deg);transform-origin:50% 50%;
+  filter:drop-shadow(0 0 6px rgba(255,200,110,.9))}
+#holdRing.run circle{transition:stroke-dashoffset var(--d,6000ms) linear;stroke-dashoffset:0}
+@media (prefers-reduced-motion:reduce){#ayah.spin #ayRot,#ss.gold #ssGold,.ssSunGlow,#ayah.spin #ayGlow{animation:none}}
+
+/* [2.2] dil seçimi */
+.langs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:12px;background:rgba(150,172,196,.07);border:1px solid rgba(150,232,255,.12)}
+.langs button{padding:10px 4px;border-radius:9px;border:0;background:none;color:var(--soft);font:500 13px/1.2 var(--f-ui);cursor:pointer}
+.langs button[aria-pressed="true"]{background:linear-gradient(180deg,rgba(70,205,245,.3),rgba(70,205,245,.12));color:#fff;box-shadow:inset 0 0 0 1px rgba(140,228,255,.55),0 0 14px rgba(70,205,245,.25)}
+.langs button:focus-visible{outline:2px solid var(--signal);outline-offset:1px}
+.privlink{justify-self:start;margin-top:6px;font:500 12px var(--f-ui);color:var(--mute);text-decoration:underline;text-underline-offset:3px}
+[dir="rtl"] .bar,[dir="rtl"] #panel,[dir="rtl"] #card,[dir="rtl"] #settings{text-align:right}
+[dir="rtl"] .zbtn{text-align:right}
+
+#listBtn.wmn{white-space:nowrap}
+@media (max-width:760px){ #listBtn.wmn{font-size:11.5px;letter-spacing:.04em;padding:8px 10px 8px 9px;gap:7px} .brand b{letter-spacing:.26em!important} }
+@media (max-width:380px){ .brand b{display:none} }
 </style>
 </head>
 <body class="splashing">
@@ -614,6 +691,7 @@ html,body{background:#020304}
   <canvas id="spCanvas"></canvas>
   <div class="sp-word" id="spWord"></div>
   <button class="sp-open" id="spOpen" hidden><span class="gx" data-t="Open">Open</span></button>
+  <div class="sp-slow" id="spSlow" hidden><span id="spSlowT"></span><button id="spRetry" type="button"></button></div>
 </div>
 <script>
 /* [2.3] Giriş ekranı ayrı betikte: harita kütüphanesi (≈4 MB) inerken bile anında görünür ve canlanır */
@@ -621,9 +699,22 @@ html,body{background:#020304}
 "use strict";
 const $ = (id) => document.getElementById(id);
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const SPLASH_MS = REDUCED ? 800 : 2550; window.SPLASH_MS = SPLASH_MS;   // [2.6] Büyük Ayı'nın son çizgisi tamamlandığı an
+const SPLASH_MS = REDUCED ? 800 : 2550; window.SPLASH_MS = SPLASH_MS;
+// [2.2] Giriş metinleri seçili dilde (logo hariç); dil değişince/ekran kartı yenilenince giriş atlanır
+const SPL_LANG = (() => { try { return JSON.parse(localStorage.getItem("wm-set") || "{}").lang || "en"; } catch { return "en"; } })();
+const SPL = { en: ["Open", "Slow connection. The map is still loading…", "Retry"], tr: ["Aç", "Bağlantı yavaş. Harita hâlâ yükleniyor…", "Tekrar dene"],
+  it: ["Apri", "Connessione lenta. La mappa si sta ancora caricando…", "Riprova"], ru: ["Открыть", "Медленное соединение. Карта ещё загружается…", "Повторить"],
+  fr: ["Ouvrir", "Connexion lente. La carte est encore en cours de chargement…", "Réessayer"], es: ["Abrir", "Conexión lenta. El mapa todavía se está cargando…", "Reintentar"],
+  zh: ["打开", "网络较慢，地图仍在加载…", "重试"], ar: ["افتح", "الاتصال بطيء. لا تزال الخريطة قيد التحميل…", "أعد المحاولة"], de: ["Öffnen", "Langsame Verbindung. Die Karte wird noch geladen…", "Erneut versuchen"] }[SPL_LANG] || ["Open", "Slow connection. The map is still loading…", "Retry"];
+document.documentElement.lang = SPL_LANG; if (SPL_LANG === "ar") document.documentElement.dir = "rtl";
+{ const o = $("spOpen").querySelector(".gx"); o.textContent = SPL[0]; o.dataset.t = SPL[0]; }
+$("spSlowT").textContent = SPL[1]; $("spRetry").textContent = SPL[2];
+$("spRetry").addEventListener("click", () => location.reload());
+let SKIP = false; try { SKIP = sessionStorage.getItem("wm-skip-splash") === "1"; sessionStorage.removeItem("wm-skip-splash"); } catch {}
+window.WM_SKIP_SPLASH = SKIP;
+setTimeout(() => { if (!window.WM_OPEN && document.getElementById("splash")) $("spSlow").hidden = false; }, 20000);   // [2.6] Büyük Ayı'nın son çizgisi tamamlandığı an
 // [2.4] OPEN harita kütüphanesini beklemez: süresi gelince her zaman görünür. Kütüphane henüz inmediyse basış hatırlanır, hazır olunca kendiliğinden açılır.
-setTimeout(() => { const b = $("spOpen"); if (b && b.hidden) { b.hidden = false; try { b.focus({ preventScroll: true }); } catch {} } }, SPLASH_MS);
+setTimeout(() => { const b = $("spOpen"); if (b && b.hidden && !SKIP) { b.hidden = false; try { b.focus({ preventScroll: true }); } catch {} } }, SPLASH_MS);
 $("spOpen").addEventListener("click", () => { if (window.WM_OPEN) return; window.WM_WANT_OPEN = true; $("spOpen").classList.add("wait"); });
 (() => {   // giriş: ekranı kaplayan, hafifçe parıldayan yıldız tozu
   const cv = $("spStars"), g = cv.getContext("2d"), dpr = Math.min(1.5, window.devicePixelRatio || 1);   // [2.3] 2 → 1.5
@@ -696,7 +787,7 @@ function paintDots(g, C, R, P, rot, alpha, rad) {
   }
 }
 function paintDipper(g, C, R, t, k, now) {
-  const P = DIP.map(([x, y, m], i) => ({ x: C + x * R, y: C + y * R, b: Math.max(0.08, (3.4 - m) / 1.6), a: k.star(i), tw: 0.86 + 0.14 * Math.sin(now / 420 + i * 1.3) }));
+  const P = DIP.map(([x, y, m], i) => ({ x: C + x * R, y: C + y * R, b: Math.max(0.08, (3.4 - m) / 1.6), a: k.star(i), fl: k.flash ? k.flash(i) : 0, tw: 0.86 + 0.14 * Math.sin(now / 420 + i * 1.3) }));
   g.lineWidth = Math.max(0.6, R / 300); g.lineCap = "round";
   LINKS.forEach(([i, j], n) => { const l = k.line(n); if (l <= 0) return; const A = P[i], B = P[j];
     g.strokeStyle = `rgba(130,222,245,${0.42 * l})`; g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(A.x + (B.x - A.x) * l, A.y + (B.y - A.y) * l); g.stroke(); });
@@ -704,10 +795,13 @@ function paintDipper(g, C, R, t, k, now) {
     if (s.a <= 0) continue;
     const gl = R * (0.16 + 0.26 * s.b) * (0.94 + 0.06 * s.tw);
     g.globalAlpha = s.a * s.tw; g.drawImage(GLOW, s.x - gl, s.y - gl, gl * 2, gl * 2);
-    const L = R * (0.14 + 0.46 * s.b) * s.a, th = Math.max(1.4, R / 130);
-    g.globalAlpha = Math.min(1, s.a * s.tw * 1.05);
-    g.drawImage(FLARE, s.x - L, s.y - th, L * 2, th * 2);
-    g.save(); g.translate(s.x, s.y); g.rotate(Math.PI / 2); g.drawImage(FLARE, -L, -th, L * 2, th * 2); g.restore();
+    // [2.2] artı şeklindeki ışık çaprazı yalnızca yıldızın parladığı anda kısa bir flaş; sonra yalnız yumuşak hale kalır
+    if (s.fl > 0.01) {
+      const L = R * (0.14 + 0.46 * s.b) * (0.6 + 0.4 * s.fl), th = Math.max(1.4, R / 130);
+      g.globalAlpha = Math.min(1, s.fl);
+      g.drawImage(FLARE, s.x - L, s.y - th, L * 2, th * 2);
+      g.save(); g.translate(s.x, s.y); g.rotate(Math.PI / 2); g.drawImage(FLARE, -L, -th, L * 2, th * 2); g.restore();
+    }
     g.globalAlpha = Math.min(1, s.a * 1.2); g.fillStyle = "rgba(240,253,255,1)";
     g.beginPath(); g.arc(s.x, s.y, Math.max(1, R / 200) * (1.6 + 2.8 * s.b), 0, 6.2832); g.fill();
     g.globalAlpha = 1;
@@ -735,9 +829,9 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   // dönüş: başta canlı, Büyük Ayı tamamlanınca yumuşakça sakinleşir
   const V1 = 0.22, V2 = 0.05, DEC = 1.4;
   const sm = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
-  const rotAt = (t) => { if (t <= TL.lines) return V1 * t;
-    const u = Math.min(t - TL.lines, DEC); let acc = 0; const st = 24; for (let i = 0; i < st; i++) { const tt = (i + 0.5) / st * u; acc += (V2 + (V1 - V2) * (1 - sm(tt / DEC))) * u / st; }
-    return V1 * TL.lines + acc + Math.max(0, t - TL.lines - DEC) * V2; };
+  // [2.2] Büyük Ayı tamamlandığı an küre durur (0,7 sn'de yumuşakça)
+  const STOP = 0.7;
+  const rotAt = (t) => { if (t <= TL.lines) return V1 * t; const u = Math.min(t - TL.lines, STOP) / STOP; return V1 * TL.lines + V1 * STOP * (u - u * u / 2); };
   const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
   const eio = (x) => { x = Math.min(1, Math.max(0, x)); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
   const t0 = performance.now();
@@ -751,7 +845,8 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
     g.clearRect(0, 0, size, size);
     g.globalAlpha = fa; g.drawImage(FIB, 0, 0, size, size); g.globalAlpha = 1;
     paintDots(g, C, R, PTS, rotAt(t), fa, PHONE ? 1.05 : 1.15);
-    paintDipper(g, C, R, t, { star: (i) => ease((t - TL.star0 - i * TL.starD) / 0.45), line: (n) => eio((t - TL.line0 - n * TL.lineD) / TL.lineD) }, now);
+    paintDipper(g, C, R, t, { star: (i) => ease((t - TL.star0 - i * TL.starD) / 0.45), line: (n) => eio((t - TL.line0 - n * TL.lineD) / TL.lineD),
+      flash: (i) => { const u = (t - TL.star0 - i * TL.starD) / 0.9; return u > 0 && u < 1 ? Math.pow(Math.sin(Math.PI * u), 1.5) : 0; } }, now);
     // Open'a erken basıldıysa ve harita henüz hazır değilse: kürenin çevresinde dönen ince turkuaz ışık
     if (window.WM_WANT_OPEN && !window.WM_OPEN) {
       const a0 = t * 3.2; g.lineWidth = 1.4; g.lineCap = "round";
@@ -766,10 +861,10 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
 
 <header class="bar">
   <div class="brand"><canvas class="mlogo" id="bLogo" width="96" height="96"></canvas><b>WORLDMIND</b></div>
-  <div class="live"><i class="dot"></i><span class="lbl">LIVE</span><span id="upd" hidden></span></div>
+  <div class="live"><i class="dot"></i><span class="lbl" data-i="liveLbl">LIVE</span><span id="upd" hidden></span></div>
   <div class="spacer"></div>
-  <button class="nbtn gearb" id="setBtn" aria-pressed="false" aria-controls="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.6 7.6 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></button>
-  <button class="nbtn wmn" id="listBtn" aria-pressed="false" aria-controls="panel"><span class="nb-i"></span><span class="gx" data-t="NEWS WM">NEWS WM</span></button>
+  <button class="nbtn gearb" id="setBtn" aria-pressed="false" aria-controls="settings" aria-label="Settings" data-ia="settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.6 7.6 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></button>
+  <button class="nbtn wmn" id="listBtn" aria-pressed="false" aria-controls="panel"><span class="nb-i"></span><span class="gx" id="newsLbl" data-t="NEWS WM">NEWS WM</span></button>
 </header>
 
 <aside id="panel" hidden>
@@ -787,17 +882,20 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
 </aside>
 
 <section id="settings" hidden aria-label="Settings">
-  <div class="shead"><span class="stitle">Settings</span><button class="x" id="setClose" aria-label="Close">×</button></div>
-  <h4>World view</h4>
-  <label class="sw"><span>Clouds<small>Live satellite clouds, updated every 3 hours</small></span><input type="checkbox" id="s_clouds"><i></i></label>
-  <label class="sw"><span>City lights at night<small>NASA night-time lights on the dark side</small></span><input type="checkbox" id="s_night"><i></i></label>
-  <label class="sw"><span>Day and night<small>Real sun position · off = always daylight</small></span><input type="checkbox" id="s_sun"><i></i></label>
-  <label class="sw"><span>Atmosphere glow<small>Turquoise halo around the Earth</small></span><input type="checkbox" id="s_atmo"><i></i></label>
-  <label class="sw"><span>Auto-rotate<small>The globe turns slowly when idle</small></span><input type="checkbox" id="s_rotate"><i></i></label>
-  <h4>Performance</h4>
-  <div class="seg" id="s_quality"><button type="button" data-q="saver">Battery saver</button><button type="button" data-q="balanced">Balanced</button><button type="button" data-q="max">Max sharpness</button></div>
+  <div class="shead"><span class="stitle" data-i="settings">Settings</span><button class="x" id="setClose" aria-label="Close">×</button></div>
+  <h4 data-i="worldView">World view</h4>
+  <label class="sw"><span><span data-i="sClouds">Clouds</span><small data-i="sCloudsD">Live satellite clouds, updated every 3 hours</small></span><input type="checkbox" id="s_clouds"><i></i></label>
+  <label class="sw"><span><span data-i="sNight">City lights at night</span><small data-i="sNightD">NASA night-time lights on the dark side</small></span><input type="checkbox" id="s_night"><i></i></label>
+  <label class="sw"><span><span data-i="sSun">Day and night</span><small data-i="sSunD">Real sun position · off = always daylight</small></span><input type="checkbox" id="s_sun"><i></i></label>
+  <label class="sw"><span><span data-i="sAtmo">Atmosphere glow</span><small data-i="sAtmoD">Turquoise halo around the Earth</small></span><input type="checkbox" id="s_atmo"><i></i></label>
+  <label class="sw"><span><span data-i="sRot">Auto-rotate</span><small data-i="sRotD">The globe turns slowly when idle</small></span><input type="checkbox" id="s_rotate"><i></i></label>
+  <h4 data-i="perf">Performance</h4>
+  <div class="seg" id="s_quality"><button type="button" data-q="saver" data-i="qSaver">Battery saver</button><button type="button" data-q="balanced" data-i="qBal">Balanced</button><button type="button" data-q="max" data-i="qMax">Max sharpness</button></div>
   <p class="seg-note" id="s_qnote"></p>
-  <label class="sw"><span>Animations<small>Pulse rings and building glow</small></span><input type="checkbox" id="s_anim"><i></i></label>
+  <label class="sw"><span><span data-i="sAnim">Animations</span><small data-i="sAnimD">Pulse rings and building glow</small></span><input type="checkbox" id="s_anim"><i></i></label>
+  <h4 data-i="language">Language</h4>
+  <div class="langs" id="s_lang"></div>
+  <a class="privlink" href="privacy.html" target="_blank" rel="noopener" data-i="privacy">Privacy</a>
 </section>
 <section id="card" hidden></section>
 
@@ -816,6 +914,16 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   <div id="tvBody"></div>
 </section>
 <div id="toast" hidden></div>
+<div id="sunEarth" hidden aria-hidden="true"><canvas id="sunSprite" width="256" height="256"></canvas></div>
+<section id="ss" hidden aria-label="Sun">
+  <canvas class="ssl" id="ssStars"></canvas><canvas class="ssl" id="ssGold"></canvas>
+  <div class="ssWave" id="ssWave"></div>
+  <canvas class="ssl" id="ssScene"></canvas><div class="ssEarth" id="ssEarth"></div>
+</section>
+<div id="ayHaze" aria-hidden="true"></div>
+<div id="ayah" hidden aria-hidden="true"><div class="ayLight" id="ayLight"></div><div id="ayRot"><canvas id="ayGlow"></canvas><canvas id="ayText"></canvas></div></div>
+<div id="ayMeal" hidden role="note"><b id="ayRef"></b><p id="ayTxt"></p><small id="aySrc"></small></div>
+<div id="holdRing" hidden aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44"/></svg></div>
 
 <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/';</script>
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js"></script>
@@ -828,7 +936,7 @@ const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImF6Y0YwZDcxTlhq
 /* ---------- Dil ---------- */
 const L = {
   en: {
-    photoNews: "News photo", photoWho: "Who / where", news: "News", worldEv: "World events", hint: "Tap a story to open it  ·  ZOOM IN to fly there", live: "LIVE ·", updated: "updated", connecting: "connecting…", b3d: "3D Cities", loading3d: "Loading…", refresh: "Refresh", list: "List",
+    photoNews: "News photo", photoWho: "Who / where", news: "News", worldEv: "World events", hint: "Tap a story to open it  ·  Zoom in to fly there", live: "LIVE ·", updated: "updated", connecting: "connecting…", b3d: "3D Cities", loading3d: "Loading…", refresh: "Refresh", list: "List",
     search: "Search country, city or keyword", all: "All", netCat: "Linked", onlyActive: "Ongoing only",
     catisma: "Conflict", protesto: "Protest", siyaset: "Politics", afet: "Disaster", diger: "Other",
     on: "● ongoing", off: "○ may have ended", onL: "● Ongoing", offL: "○ May have ended", nw: "NEW", nEv: (n) => `${n} events`,
@@ -850,6 +958,244 @@ const L = {
     alt: "Altitude", exit: "Zoom out", zoomIn: "Zoom in",
     prec: "Location", prec_exact: "Exact", prec_city: "City", prec_country: "Country-wide (approximate)", prec_capital: "Capital (assumed)", prec_inst: "Institution address",
     N: "N", S: "S", E: "E", W: "W",
+    liveLbl: "LIVE", newsWM: "NEWS WM", backWorld: "Back to the whole world", flyTo: (v) => `Fly to ${v}`, flyScene: "Fly to the scene",
+    readingLoc: "Reading the report · locating the exact site", readingSite: "Reading the report · locating the site", reading: "Reading the report…", otherOutlets: "Other outlets report", resize: "Resize",
+    settings: "Settings", worldView: "World view", sClouds: "Clouds", sCloudsD: "Live satellite clouds, updated every 3 hours", sNight: "City lights at night", sNightD: "NASA night-time lights on the dark side",
+    sSun: "Day and night", sSunD: "Real sun position · off = always daylight", sAtmo: "Atmosphere glow", sAtmoD: "Turquoise halo around the Earth", sRot: "Auto-rotate", sRotD: "The globe turns slowly when idle",
+    perf: "Performance", qSaver: "Battery saver", qBal: "Balanced", qMax: "Max sharpness", qSaverN: "Lighter on the battery and older devices. Slightly softer far away.", qBalN: "Sharp and smooth. Recommended.", qMaxN: "Sharpest image. Uses more power; may stutter on older devices.",
+    sAnim: "Animations", sAnimD: "Pulse rings and building glow", language: "Language", ayRef: "Al-Mu'minun · 23:116", privacy: "Privacy",
+  },
+  tr: {
+    photoNews: "Haber fotoğrafı", photoWho: "Kim / nerede", news: "Haberler", worldEv: "Dünya olayları", hint: "Açmak için habere dokun  ·  Oraya uçmak için Yakınlaş", live: "CANLI ·", updated: "güncellendi", connecting: "bağlanıyor…",
+    search: "Ülke, şehir ya da kelime ara", all: "Tümü", netCat: "Bağlantılı", onlyActive: "Yalnızca süren",
+    catisma: "Çatışma", protesto: "Protesto", siyaset: "Siyaset", afet: "Afet", diger: "Diğer",
+    on: "● sürüyor", off: "○ bitmiş olabilir", onL: "● Sürüyor", offL: "○ Bitmiş olabilir", nw: "YENİ", nEv: (n) => `${n} olay`,
+    empty: "Bu filtreye uyan olay yok.", emptyView: "Görünen bölgede uygun olay yok. Haritayı kaydır ya da uzaklaş.", loadingData: "Veriler yükleniyor…",
+    every: (n) => `${n} dk'da bir`, loading: "yükleniyor", err: "hata", timeout: "zaman aşımı", blocked: "erişim engellendi", nodata: "veri yok",
+    src_gdacs: "GDACS afetleri", src_wiki: "Wikipedia olayları", src_bsky: "Haber ajansları", src_rss: "RSS akışları", src_deep: "Haber analizi", src_usgs: "USGS depremleri",
+    prec_region: "Bölge", why: "Neden burada", why_dateline: (v) => `tarih satırı: ${v}`, why_text: (v) => `haberde geçen yer: ${v}`, why_venue: (v) => `mekân: ${v}`,
+    why_summit: (v) => `${v} ev sahibi şehri`, why_inst: (v) => `ilgili kurum: ${v}`, why_capital: (v) => `yönetim merkezi: ${v}`, why_seat: (v) => `bölgesel yönetim: ${v}`, why_wiki: (v) => `Wikipedia bağlantısı: ${v}`, why_anchor: (v) => `haberdeki kişi/kurum: ${v}`, why_likely: (v) => `en olası yer (tahmini): ${v}`,
+    now: "şimdi", min: (n) => `${n} dk önce`, hr: (n) => `${n} sa önce`, day: (n) => `${n} gün önce`, last24: "son 24 saat", today: "bugün", yesterday: "dün",
+    source: "Kaynak", reports: (n) => `${n} haber`, alert: "Uyarı", lv: { Orange: "orta", Red: "yüksek" },
+    zoom: "Yakınlaş", openSrc: "Kaynağı aç ↗", more: "Daha fazla bilgi", less: "Bilgiyi gizle", bg: "Arka plan", fromArticle: "Haberden", nearby: "Aynı bölgedeki diğer olaylar",
+    srcs: "Kaynak haberler", noMore: "Bu olay için ek bilgi bulunamadı.", readWiki: "Wikipedia'da devam et ↗", lvBtn: "📡 Canlı", lvTitle: "Bölgeden canlı yayınlar", lvNews: "Canlı haber kanalları",
+    lvNone: "Şu an bu bölgede canlı yayın bulunamadı.", lvSearching: "Canlı yayınlar aranıyor…", lvVid: "▶ Haberdeki video", lvVidT: "Haberdeki video",
+    lvFail: "Bölge yayınlarına şu an ulaşılamıyor. Aşağıdaki canlı haber kanallarını izleyebilirsin.",
+    openYt: "YouTube'da aç ↗", tvLive: "CANLI", searching: "Bilgi toplanıyor…", translating: "Çevriliyor…", autoTx: "Makine çevirisi", original: "Orijinal",
+    close: "Kapat", refreshing: "Veriler yenileniyor…", newEv: (c, t) => `Yeni ${c.toLocaleLowerCase("tr")}: ${t}`,
+    fatalTitle: "WorldMind başlatılamadı", noCesium: "Harita kütüphanesi yüklenemedi. Bağlantını kontrol edip yeniden yükle.", noGL: "Bu tarayıcı 3D haritayı çalıştıramadı. Chrome'u dene.",
+    alt: "Yükseklik", exit: "Uzaklaş", zoomIn: "Yakınlaş",
+    prec: "Konum", prec_exact: "Tam yer", prec_city: "Şehir", prec_country: "Ülke geneli (yaklaşık)", prec_capital: "Başkent (tahmini)", prec_inst: "Kurum adresi",
+    N: "K", S: "G", E: "D", W: "B",
+    liveLbl: "CANLI", newsWM: "HABERLER WM", backWorld: "Bütün dünyaya dön", flyTo: (v) => `${v} konumuna uç`, flyScene: "Olay yerine uç",
+    readingLoc: "Haber okunuyor · tam yer bulunuyor", readingSite: "Haber okunuyor · yer bulunuyor", reading: "Haber okunuyor…", otherOutlets: "Diğer kaynaklar ne diyor", resize: "Boyutlandır",
+    settings: "Ayarlar", worldView: "Dünya görünümü", sClouds: "Bulutlar", sCloudsD: "Canlı uydu bulutları, 3 saatte bir güncellenir", sNight: "Gece şehir ışıkları", sNightD: "Karanlık tarafta NASA gece ışıkları",
+    sSun: "Gece ve gündüz", sSunD: "Güneşin gerçek konumu · kapalı = hep gündüz", sAtmo: "Atmosfer ışıltısı", sAtmoD: "Dünya'nın çevresinde turkuaz hale", sRot: "Kendiliğinden dönme", sRotD: "Dokunulmadığında Dünya yavaşça döner",
+    perf: "Performans", qSaver: "Pil tasarrufu", qBal: "Dengeli", qMax: "En yüksek netlik", qSaverN: "Pil ve eski cihazlar için daha hafif. Uzaktan biraz daha yumuşak.", qBalN: "Net ve akıcı. Önerilen.", qMaxN: "En net görüntü. Daha çok güç kullanır; eski cihazlarda takılabilir.",
+    sAnim: "Animasyonlar", sAnimD: "Nabız halkaları ve bina ışıması", language: "Dil", ayRef: "Mü'minûn Suresi · 116", privacy: "Gizlilik",
+  },
+  it: {
+    photoNews: "Foto della notizia", photoWho: "Chi / dove", news: "Notizie", worldEv: "Eventi nel mondo", hint: "Tocca una notizia per aprirla  ·  Avvicina per volare lì", live: "LIVE ·", updated: "aggiornato", connecting: "connessione…",
+    search: "Cerca paese, città o parola", all: "Tutti", netCat: "Collegati", onlyActive: "Solo in corso",
+    catisma: "Conflitto", protesto: "Protesta", siyaset: "Politica", afet: "Disastro", diger: "Altro",
+    on: "● in corso", off: "○ forse concluso", onL: "● In corso", offL: "○ Forse concluso", nw: "NUOVO", nEv: (n) => `${n} eventi`,
+    empty: "Nessun evento corrisponde a questo filtro.", emptyView: "Nessun evento nell'area visibile. Sposta o allontana la mappa.", loadingData: "Caricamento dati…",
+    every: (n) => `ogni ${n} min`, loading: "caricamento", err: "errore", timeout: "tempo scaduto", blocked: "accesso bloccato", nodata: "nessun dato",
+    src_gdacs: "Disastri GDACS", src_wiki: "Eventi Wikipedia", src_bsky: "Agenzie di stampa", src_rss: "Feed RSS", src_deep: "Analisi degli articoli", src_usgs: "Terremoti USGS",
+    prec_region: "Regione", why: "Perché qui", why_dateline: (v) => `luogo di redazione: ${v}`, why_text: (v) => `luogo citato nella notizia: ${v}`, why_venue: (v) => `luogo: ${v}`,
+    why_summit: (v) => `città ospitante di ${v}`, why_inst: (v) => `istituzione: ${v}`, why_capital: (v) => `sede del governo: ${v}`, why_seat: (v) => `autorità regionale: ${v}`, why_wiki: (v) => `link Wikipedia: ${v}`, why_anchor: (v) => `persona/istituzione nella notizia: ${v}`, why_likely: (v) => `luogo più probabile (stimato): ${v}`,
+    now: "ora", min: (n) => `${n} min fa`, hr: (n) => `${n} h fa`, day: (n) => `${n} g fa`, last24: "ultime 24 ore", today: "oggi", yesterday: "ieri",
+    source: "Fonte", reports: (n) => `${n} articoli`, alert: "Allerta", lv: { Orange: "media", Red: "alta" },
+    zoom: "Avvicina", openSrc: "Apri la fonte ↗", more: "Più informazioni", less: "Nascondi informazioni", bg: "Contesto", fromArticle: "Dall'articolo", nearby: "Altri eventi nella stessa zona",
+    srcs: "Articoli di origine", noMore: "Nessuna informazione aggiuntiva per questo evento.", readWiki: "Continua su Wikipedia ↗", lvBtn: "📡 Live", lvTitle: "Dirette dalla zona", lvNews: "Canali di notizie in diretta",
+    lvNone: "Nessuna diretta trovata in questa zona al momento.", lvSearching: "Ricerca dirette…", lvVid: "▶ Video della notizia", lvVidT: "Video della notizia",
+    lvFail: "Le dirette della zona non sono raggiungibili ora. Puoi guardare i canali di notizie qui sotto.",
+    openYt: "Apri su YouTube ↗", tvLive: "LIVE", searching: "Raccolta informazioni…", translating: "Traduzione…", autoTx: "Traduzione automatica", original: "Originale",
+    close: "Chiudi", refreshing: "Aggiornamento dati…", newEv: (c, t) => `Nuovo evento (${c.toLowerCase()}): ${t}`,
+    fatalTitle: "WorldMind non è riuscito ad avviarsi", noCesium: "La libreria della mappa non si è caricata. Controlla la connessione e ricarica.", noGL: "Questo browser non può eseguire la mappa 3D. Prova Chrome.",
+    alt: "Altitudine", exit: "Allontana", zoomIn: "Avvicina",
+    prec: "Posizione", prec_exact: "Esatta", prec_city: "Città", prec_country: "Tutto il paese (approssimativo)", prec_capital: "Capitale (presunta)", prec_inst: "Sede dell'istituzione",
+    N: "N", S: "S", E: "E", W: "O",
+    liveLbl: "LIVE", newsWM: "NOTIZIE WM", backWorld: "Torna al mondo intero", flyTo: (v) => `Vola a ${v}`, flyScene: "Vola sul posto",
+    readingLoc: "Lettura dell'articolo · ricerca del luogo esatto", readingSite: "Lettura dell'articolo · ricerca del luogo", reading: "Lettura dell'articolo…", otherOutlets: "Cosa riportano altre testate", resize: "Ridimensiona",
+    settings: "Impostazioni", worldView: "Vista del mondo", sClouds: "Nuvole", sCloudsD: "Nuvole satellitari dal vivo, aggiornate ogni 3 ore", sNight: "Luci delle città di notte", sNightD: "Luci notturne della NASA sul lato buio",
+    sSun: "Giorno e notte", sSunD: "Posizione reale del sole · spento = sempre giorno", sAtmo: "Bagliore dell'atmosfera", sAtmoD: "Alone turchese attorno alla Terra", sRot: "Rotazione automatica", sRotD: "Il globo ruota lentamente quando è inattivo",
+    perf: "Prestazioni", qSaver: "Risparmio", qBal: "Bilanciata", qMax: "Massima nitidezza", qSaverN: "Più leggera per la batteria e i dispositivi meno recenti. Un po' più morbida da lontano.", qBalN: "Nitida e fluida. Consigliata.", qMaxN: "Immagine più nitida. Consuma di più; può rallentare sui dispositivi meno recenti.",
+    sAnim: "Animazioni", sAnimD: "Anelli pulsanti e luce sugli edifici", language: "Lingua", ayRef: "Al-Mu'minun · 23:116", privacy: "Privacy",
+  },
+  ru: {
+    photoNews: "Фото новости", photoWho: "Кто / где", news: "Новости", worldEv: "События в мире", hint: "Коснитесь новости, чтобы открыть  ·  «Приблизить» — полететь туда", live: "LIVE ·", updated: "обновлено", connecting: "подключение…",
+    search: "Поиск страны, города или слова", all: "Все", netCat: "Связанные", onlyActive: "Только текущие",
+    catisma: "Конфликт", protesto: "Протест", siyaset: "Политика", afet: "Бедствие", diger: "Другое",
+    on: "● продолжается", off: "○ возможно, завершилось", onL: "● Продолжается", offL: "○ Возможно, завершилось", nw: "НОВОЕ", nEv: (n) => `событий: ${n}`,
+    empty: "Нет событий по этому фильтру.", emptyView: "В видимой области нет подходящих событий. Сдвиньте или отдалите карту.", loadingData: "Загрузка данных…",
+    every: (n) => `каждые ${n} мин`, loading: "загрузка", err: "ошибка", timeout: "время истекло", blocked: "доступ заблокирован", nodata: "нет данных",
+    src_gdacs: "Бедствия GDACS", src_wiki: "События Википедии", src_bsky: "Информагентства", src_rss: "RSS-ленты", src_deep: "Анализ статей", src_usgs: "Землетрясения USGS",
+    prec_region: "Регион", why: "Почему здесь", why_dateline: (v) => `место выпуска: ${v}`, why_text: (v) => `место в тексте: ${v}`, why_venue: (v) => `место: ${v}`,
+    why_summit: (v) => `город проведения: ${v}`, why_inst: (v) => `учреждение: ${v}`, why_capital: (v) => `резиденция правительства: ${v}`, why_seat: (v) => `региональная власть: ${v}`, why_wiki: (v) => `ссылка Википедии: ${v}`, why_anchor: (v) => `лицо/учреждение в новости: ${v}`, why_likely: (v) => `наиболее вероятное место (оценка): ${v}`,
+    now: "сейчас", min: (n) => `${n} мин назад`, hr: (n) => `${n} ч назад`, day: (n) => `${n} дн назад`, last24: "последние 24 часа", today: "сегодня", yesterday: "вчера",
+    source: "Источник", reports: (n) => `публикаций: ${n}`, alert: "Тревога", lv: { Orange: "средняя", Red: "высокая" },
+    zoom: "Приблизить", openSrc: "Открыть источник ↗", more: "Подробнее", less: "Скрыть", bg: "Контекст", fromArticle: "Из статьи", nearby: "Другие события рядом",
+    srcs: "Исходные публикации", noMore: "Дополнительных сведений не найдено.", readWiki: "Читать в Википедии ↗", lvBtn: "📡 Эфир", lvTitle: "Прямые трансляции из региона", lvNews: "Новостные каналы в прямом эфире",
+    lvNone: "Сейчас в этом регионе нет прямых трансляций.", lvSearching: "Поиск трансляций…", lvVid: "▶ Видео из новости", lvVidT: "Видео из новости",
+    lvFail: "Трансляции региона сейчас недоступны. Можно смотреть новостные каналы ниже.",
+    openYt: "Открыть на YouTube ↗", tvLive: "ЭФИР", searching: "Сбор информации…", translating: "Перевод…", autoTx: "Машинный перевод", original: "Оригинал",
+    close: "Закрыть", refreshing: "Обновление данных…", newEv: (c, t) => `Новое событие (${c.toLowerCase()}): ${t}`,
+    fatalTitle: "Не удалось запустить WorldMind", noCesium: "Библиотека карты не загрузилась. Проверьте соединение и перезагрузите.", noGL: "Этот браузер не может показать 3D-карту. Попробуйте Chrome.",
+    alt: "Высота", exit: "Отдалить", zoomIn: "Приблизить",
+    prec: "Место", prec_exact: "Точное", prec_city: "Город", prec_country: "Вся страна (примерно)", prec_capital: "Столица (предположительно)", prec_inst: "Адрес учреждения",
+    N: "с. ш.", S: "ю. ш.", E: "в. д.", W: "з. д.",
+    liveLbl: "LIVE", newsWM: "НОВОСТИ WM", backWorld: "Вернуться ко всему миру", flyTo: (v) => `Лететь: ${v}`, flyScene: "Лететь к месту события",
+    readingLoc: "Чтение статьи · поиск точного места", readingSite: "Чтение статьи · поиск места", reading: "Чтение статьи…", otherOutlets: "Что пишут другие издания", resize: "Изменить размер",
+    settings: "Настройки", worldView: "Вид Земли", sClouds: "Облака", sCloudsD: "Спутниковые облака, обновляются каждые 3 часа", sNight: "Огни городов ночью", sNightD: "Ночные огни NASA на тёмной стороне",
+    sSun: "День и ночь", sSunD: "Реальное положение солнца · выкл. = всегда день", sAtmo: "Свечение атмосферы", sAtmoD: "Бирюзовый ореол вокруг Земли", sRot: "Автовращение", sRotD: "Глобус медленно вращается в покое",
+    perf: "Производительность", qSaver: "Экономия", qBal: "Баланс", qMax: "Макс. чёткость", qSaverN: "Бережнее к батарее и старым устройствам. Издалека чуть мягче.", qBalN: "Чётко и плавно. Рекомендуется.", qMaxN: "Самое чёткое изображение. Больше расход энергии; на старых устройствах возможны рывки.",
+    sAnim: "Анимации", sAnimD: "Пульсирующие кольца и подсветка зданий", language: "Язык", ayRef: "Сура «Аль-Муминун» · 116", privacy: "Конфиденциальность",
+  },
+  fr: {
+    photoNews: "Photo de l'article", photoWho: "Qui / où", news: "Actualités", worldEv: "Événements dans le monde", hint: "Touchez un article pour l'ouvrir  ·  Zoomer pour y voler", live: "DIRECT ·", updated: "mis à jour", connecting: "connexion…",
+    search: "Rechercher un pays, une ville ou un mot", all: "Tous", netCat: "Liés", onlyActive: "En cours seulement",
+    catisma: "Conflit", protesto: "Manifestation", siyaset: "Politique", afet: "Catastrophe", diger: "Autre",
+    on: "● en cours", off: "○ peut-être terminé", onL: "● En cours", offL: "○ Peut-être terminé", nw: "NOUVEAU", nEv: (n) => `${n} événements`,
+    empty: "Aucun événement pour ce filtre.", emptyView: "Aucun événement dans la zone visible. Déplacez ou dézoomez la carte.", loadingData: "Chargement des données…",
+    every: (n) => `toutes les ${n} min`, loading: "chargement", err: "erreur", timeout: "délai dépassé", blocked: "accès bloqué", nodata: "aucune donnée",
+    src_gdacs: "Catastrophes GDACS", src_wiki: "Événements Wikipédia", src_bsky: "Agences de presse", src_rss: "Flux RSS", src_deep: "Analyse des articles", src_usgs: "Séismes USGS",
+    prec_region: "Région", why: "Pourquoi ici", why_dateline: (v) => `lieu de rédaction : ${v}`, why_text: (v) => `lieu cité : ${v}`, why_venue: (v) => `lieu : ${v}`,
+    why_summit: (v) => `ville hôte de ${v}`, why_inst: (v) => `institution : ${v}`, why_capital: (v) => `siège du gouvernement : ${v}`, why_seat: (v) => `autorité régionale : ${v}`, why_wiki: (v) => `lien Wikipédia : ${v}`, why_anchor: (v) => `personne/institution citée : ${v}`, why_likely: (v) => `lieu le plus probable (estimé) : ${v}`,
+    now: "maintenant", min: (n) => `il y a ${n} min`, hr: (n) => `il y a ${n} h`, day: (n) => `il y a ${n} j`, last24: "dernières 24 heures", today: "aujourd'hui", yesterday: "hier",
+    source: "Source", reports: (n) => `${n} articles`, alert: "Alerte", lv: { Orange: "moyenne", Red: "élevée" },
+    zoom: "Zoomer", openSrc: "Ouvrir la source ↗", more: "Plus d'informations", less: "Masquer", bg: "Contexte", fromArticle: "Extrait de l'article", nearby: "Autres événements dans la zone",
+    srcs: "Articles sources", noMore: "Aucune information supplémentaire.", readWiki: "Lire la suite sur Wikipédia ↗", lvBtn: "📡 Direct", lvTitle: "Directs de la région", lvNews: "Chaînes d'info en direct",
+    lvNone: "Aucun direct trouvé dans cette région pour le moment.", lvSearching: "Recherche de directs…", lvVid: "▶ Vidéo de l'article", lvVidT: "Vidéo de l'article",
+    lvFail: "Les directs de la région sont inaccessibles. Vous pouvez regarder les chaînes d'info ci-dessous.",
+    openYt: "Ouvrir sur YouTube ↗", tvLive: "DIRECT", searching: "Collecte d'informations…", translating: "Traduction…", autoTx: "Traduction automatique", original: "Original",
+    close: "Fermer", refreshing: "Actualisation…", newEv: (c, t) => `Nouvel événement (${c.toLowerCase()}) : ${t}`,
+    fatalTitle: "WorldMind n'a pas pu démarrer", noCesium: "La bibliothèque de la carte ne s'est pas chargée. Vérifiez la connexion et rechargez.", noGL: "Ce navigateur ne peut pas afficher la carte 3D. Essayez Chrome.",
+    alt: "Altitude", exit: "Dézoomer", zoomIn: "Zoomer",
+    prec: "Lieu", prec_exact: "Exact", prec_city: "Ville", prec_country: "Tout le pays (approximatif)", prec_capital: "Capitale (supposée)", prec_inst: "Adresse de l'institution",
+    N: "N", S: "S", E: "E", W: "O",
+    liveLbl: "DIRECT", newsWM: "ACTUALITÉS WM", backWorld: "Revenir au monde entier", flyTo: (v) => `Voler vers ${v}`, flyScene: "Voler vers le lieu",
+    readingLoc: "Lecture de l'article · recherche du lieu exact", readingSite: "Lecture de l'article · recherche du lieu", reading: "Lecture de l'article…", otherOutlets: "Ce qu'en disent d'autres médias", resize: "Redimensionner",
+    settings: "Réglages", worldView: "Vue du monde", sClouds: "Nuages", sCloudsD: "Nuages satellites en direct, mis à jour toutes les 3 heures", sNight: "Lumières des villes la nuit", sNightD: "Lumières nocturnes de la NASA côté nuit",
+    sSun: "Jour et nuit", sSunD: "Position réelle du soleil · désactivé = toujours le jour", sAtmo: "Halo atmosphérique", sAtmoD: "Halo turquoise autour de la Terre", sRot: "Rotation automatique", sRotD: "Le globe tourne lentement au repos",
+    perf: "Performances", qSaver: "Économie", qBal: "Équilibré", qMax: "Netteté max.", qSaverN: "Plus léger pour la batterie et les anciens appareils. Un peu plus doux de loin.", qBalN: "Net et fluide. Recommandé.", qMaxN: "Image la plus nette. Consomme davantage ; peut saccader sur les anciens appareils.",
+    sAnim: "Animations", sAnimD: "Anneaux pulsés et lueur des bâtiments", language: "Langue", ayRef: "Al-Mu'minun · 23:116", privacy: "Confidentialité",
+  },
+  es: {
+    photoNews: "Foto de la noticia", photoWho: "Quién / dónde", news: "Noticias", worldEv: "Eventos del mundo", hint: "Toca una noticia para abrirla  ·  Acercar para volar allí", live: "EN VIVO ·", updated: "actualizado", connecting: "conectando…",
+    search: "Buscar país, ciudad o palabra", all: "Todos", netCat: "Vinculados", onlyActive: "Solo en curso",
+    catisma: "Conflicto", protesto: "Protesta", siyaset: "Política", afet: "Desastre", diger: "Otro",
+    on: "● en curso", off: "○ puede haber terminado", onL: "● En curso", offL: "○ Puede haber terminado", nw: "NUEVO", nEv: (n) => `${n} eventos`,
+    empty: "Ningún evento coincide con este filtro.", emptyView: "No hay eventos en la zona visible. Mueve o aleja el mapa.", loadingData: "Cargando datos…",
+    every: (n) => `cada ${n} min`, loading: "cargando", err: "error", timeout: "tiempo agotado", blocked: "acceso bloqueado", nodata: "sin datos",
+    src_gdacs: "Desastres GDACS", src_wiki: "Eventos de Wikipedia", src_bsky: "Agencias de noticias", src_rss: "Fuentes RSS", src_deep: "Análisis de artículos", src_usgs: "Terremotos USGS",
+    prec_region: "Región", why: "Por qué aquí", why_dateline: (v) => `lugar de la crónica: ${v}`, why_text: (v) => `lugar citado: ${v}`, why_venue: (v) => `lugar: ${v}`,
+    why_summit: (v) => `ciudad sede de ${v}`, why_inst: (v) => `institución: ${v}`, why_capital: (v) => `sede del gobierno: ${v}`, why_seat: (v) => `autoridad regional: ${v}`, why_wiki: (v) => `enlace de Wikipedia: ${v}`, why_anchor: (v) => `persona/institución citada: ${v}`, why_likely: (v) => `lugar más probable (estimado): ${v}`,
+    now: "ahora", min: (n) => `hace ${n} min`, hr: (n) => `hace ${n} h`, day: (n) => `hace ${n} d`, last24: "últimas 24 horas", today: "hoy", yesterday: "ayer",
+    source: "Fuente", reports: (n) => `${n} artículos`, alert: "Alerta", lv: { Orange: "media", Red: "alta" },
+    zoom: "Acercar", openSrc: "Abrir la fuente ↗", more: "Más información", less: "Ocultar información", bg: "Contexto", fromArticle: "Del artículo", nearby: "Otros eventos en la misma zona",
+    srcs: "Artículos de origen", noMore: "No se encontró información adicional.", readWiki: "Seguir en Wikipedia ↗", lvBtn: "📡 En vivo", lvTitle: "Transmisiones en vivo de la zona", lvNews: "Canales de noticias en vivo",
+    lvNone: "No hay transmisiones en vivo en esta zona ahora.", lvSearching: "Buscando transmisiones…", lvVid: "▶ Vídeo de la noticia", lvVidT: "Vídeo de la noticia",
+    lvFail: "Las transmisiones de la zona no están disponibles. Puedes ver los canales de noticias abajo.",
+    openYt: "Abrir en YouTube ↗", tvLive: "EN VIVO", searching: "Reuniendo información…", translating: "Traduciendo…", autoTx: "Traducción automática", original: "Original",
+    close: "Cerrar", refreshing: "Actualizando datos…", newEv: (c, t) => `Nuevo evento (${c.toLowerCase()}): ${t}`,
+    fatalTitle: "WorldMind no pudo iniciarse", noCesium: "La biblioteca del mapa no se cargó. Revisa la conexión y recarga.", noGL: "Este navegador no puede mostrar el mapa 3D. Prueba Chrome.",
+    alt: "Altitud", exit: "Alejar", zoomIn: "Acercar",
+    prec: "Ubicación", prec_exact: "Exacta", prec_city: "Ciudad", prec_country: "Todo el país (aproximado)", prec_capital: "Capital (supuesta)", prec_inst: "Sede de la institución",
+    N: "N", S: "S", E: "E", W: "O",
+    liveLbl: "EN VIVO", newsWM: "NOTICIAS WM", backWorld: "Volver al mundo entero", flyTo: (v) => `Volar a ${v}`, flyScene: "Volar al lugar",
+    readingLoc: "Leyendo la noticia · buscando el lugar exacto", readingSite: "Leyendo la noticia · buscando el lugar", reading: "Leyendo la noticia…", otherOutlets: "Qué dicen otros medios", resize: "Cambiar tamaño",
+    settings: "Ajustes", worldView: "Vista del mundo", sClouds: "Nubes", sCloudsD: "Nubes satelitales en vivo, cada 3 horas", sNight: "Luces de las ciudades", sNightD: "Luces nocturnas de la NASA en el lado oscuro",
+    sSun: "Día y noche", sSunD: "Posición real del sol · apagado = siempre de día", sAtmo: "Brillo de la atmósfera", sAtmoD: "Halo turquesa alrededor de la Tierra", sRot: "Rotación automática", sRotD: "El globo gira despacio en reposo",
+    perf: "Rendimiento", qSaver: "Ahorro", qBal: "Equilibrado", qMax: "Máxima nitidez", qSaverN: "Más ligero para la batería y equipos antiguos. Algo más suave de lejos.", qBalN: "Nítido y fluido. Recomendado.", qMaxN: "La imagen más nítida. Consume más; puede ir a tirones en equipos antiguos.",
+    sAnim: "Animaciones", sAnimD: "Anillos pulsantes y brillo de edificios", language: "Idioma", ayRef: "Al-Mu'minun · 23:116", privacy: "Privacidad",
+  },
+  zh: {
+    photoNews: "新闻图片", photoWho: "人物 / 地点", news: "新闻", worldEv: "世界事件", hint: "点按新闻打开  ·  点“放大”飞往现场", live: "直播 ·", updated: "已更新", connecting: "连接中…",
+    search: "搜索国家、城市或关键词", all: "全部", netCat: "关联", onlyActive: "仅进行中",
+    catisma: "冲突", protesto: "抗议", siyaset: "政治", afet: "灾害", diger: "其他",
+    on: "● 进行中", off: "○ 可能已结束", onL: "● 进行中", offL: "○ 可能已结束", nw: "新", nEv: (n) => `${n} 个事件`,
+    empty: "没有符合此筛选的事件。", emptyView: "可见区域内没有相关事件。请移动或缩小地图。", loadingData: "正在加载数据…",
+    every: (n) => `每 ${n} 分钟`, loading: "加载中", err: "错误", timeout: "超时", blocked: "访问被阻止", nodata: "无数据",
+    src_gdacs: "GDACS 灾害", src_wiki: "维基百科事件", src_bsky: "通讯社", src_rss: "RSS 订阅", src_deep: "文章分析", src_usgs: "USGS 地震",
+    prec_region: "地区", why: "定位依据", why_dateline: (v) => `电头：${v}`, why_text: (v) => `报道提及地点：${v}`, why_venue: (v) => `场所：${v}`,
+    why_summit: (v) => `${v} 主办城市`, why_inst: (v) => `相关机构：${v}`, why_capital: (v) => `政府所在地：${v}`, why_seat: (v) => `地区当局：${v}`, why_wiki: (v) => `维基百科链接：${v}`, why_anchor: (v) => `报道中的人物/机构：${v}`, why_likely: (v) => `最可能的地点（估计）：${v}`,
+    now: "刚刚", min: (n) => `${n} 分钟前`, hr: (n) => `${n} 小时前`, day: (n) => `${n} 天前`, last24: "过去 24 小时", today: "今天", yesterday: "昨天",
+    source: "来源", reports: (n) => `${n} 篇报道`, alert: "警报", lv: { Orange: "中", Red: "高" },
+    zoom: "放大", openSrc: "打开来源 ↗", more: "更多信息", less: "收起信息", bg: "背景", fromArticle: "报道原文", nearby: "同一地区的其他事件",
+    srcs: "来源报道", noMore: "未找到此事件的更多信息。", readWiki: "在维基百科继续阅读 ↗", lvBtn: "📡 直播", lvTitle: "当地直播", lvNews: "新闻频道直播",
+    lvNone: "该地区暂无直播。", lvSearching: "正在搜索直播…", lvVid: "▶ 报道中的视频", lvVidT: "报道中的视频",
+    lvFail: "暂时无法连接当地直播。可以观看下方的新闻频道。",
+    openYt: "在 YouTube 打开 ↗", tvLive: "直播", searching: "正在收集信息…", translating: "翻译中…", autoTx: "机器翻译", original: "原文",
+    close: "关闭", refreshing: "正在刷新数据…", newEv: (c, t) => `新${c}：${t}`,
+    fatalTitle: "WorldMind 无法启动", noCesium: "地图库未能加载。请检查网络后重新加载。", noGL: "此浏览器无法运行 3D 地图。请尝试 Chrome。",
+    alt: "高度", exit: "缩小", zoomIn: "放大",
+    prec: "位置", prec_exact: "精确", prec_city: "城市", prec_country: "全国（大致）", prec_capital: "首都（推测）", prec_inst: "机构地址",
+    N: "北", S: "南", E: "东", W: "西",
+    liveLbl: "直播", newsWM: "新闻 WM", backWorld: "返回整个世界", flyTo: (v) => `飞往 ${v}`, flyScene: "飞往现场",
+    readingLoc: "正在阅读报道 · 定位确切地点", readingSite: "正在阅读报道 · 定位地点", reading: "正在阅读报道…", otherOutlets: "其他媒体的报道", resize: "调整大小",
+    settings: "设置", worldView: "地球视图", sClouds: "云层", sCloudsD: "实时卫星云图，每 3 小时更新", sNight: "夜间城市灯光", sNightD: "黑夜一侧显示 NASA 夜间灯光",
+    sSun: "昼夜", sSunD: "真实太阳位置 · 关闭 = 始终白天", sAtmo: "大气光晕", sAtmoD: "地球周围的青绿色光晕", sRot: "自动旋转", sRotD: "闲置时地球缓慢旋转",
+    perf: "性能", qSaver: "省电", qBal: "均衡", qMax: "最清晰", qSaverN: "更省电，适合旧设备。远景略柔和。", qBalN: "清晰流畅。推荐。", qMaxN: "最清晰的画面。耗电更多；旧设备上可能卡顿。",
+    sAnim: "动画", sAnimD: "脉冲光环与建筑光效", language: "语言", ayRef: "信士章 · 第116节", privacy: "隐私",
+  },
+  ar: {
+    photoNews: "صورة الخبر", photoWho: "من / أين", news: "الأخبار", worldEv: "أحداث العالم", hint: "اضغط على خبر لفتحه  ·  «تقريب» للطيران إليه", live: "مباشر ·", updated: "تم التحديث", connecting: "جارٍ الاتصال…",
+    search: "ابحث عن بلد أو مدينة أو كلمة", all: "الكل", netCat: "مترابطة", onlyActive: "الجارية فقط",
+    catisma: "نزاع", protesto: "احتجاج", siyaset: "سياسة", afet: "كارثة", diger: "أخرى",
+    on: "● جارٍ", off: "○ ربما انتهى", onL: "● جارٍ", offL: "○ ربما انتهى", nw: "جديد", nEv: (n) => `${n} حدثًا`,
+    empty: "لا توجد أحداث تطابق هذا التصفية.", emptyView: "لا توجد أحداث في المنطقة الظاهرة. حرّك الخريطة أو صغّرها.", loadingData: "جارٍ تحميل البيانات…",
+    every: (n) => `كل ${n} دقيقة`, loading: "جارٍ التحميل", err: "خطأ", timeout: "انتهت المهلة", blocked: "تم حظر الوصول", nodata: "لا بيانات",
+    src_gdacs: "كوارث GDACS", src_wiki: "أحداث ويكيبيديا", src_bsky: "وكالات الأنباء", src_rss: "خلاصات RSS", src_deep: "تحليل المقالات", src_usgs: "زلازل USGS",
+    prec_region: "منطقة", why: "لماذا هنا", why_dateline: (v) => `مكان الخبر: ${v}`, why_text: (v) => `مكان مذكور في الخبر: ${v}`, why_venue: (v) => `الموقع: ${v}`,
+    why_summit: (v) => `المدينة المضيفة لـ ${v}`, why_inst: (v) => `المؤسسة المعنية: ${v}`, why_capital: (v) => `مقر الحكومة: ${v}`, why_seat: (v) => `السلطة الإقليمية: ${v}`, why_wiki: (v) => `رابط ويكيبيديا: ${v}`, why_anchor: (v) => `شخص/مؤسسة في الخبر: ${v}`, why_likely: (v) => `المكان الأرجح (تقديري): ${v}`,
+    now: "الآن", min: (n) => `قبل ${n} د`, hr: (n) => `قبل ${n} س`, day: (n) => `قبل ${n} يوم`, last24: "آخر 24 ساعة", today: "اليوم", yesterday: "أمس",
+    source: "المصدر", reports: (n) => `${n} تقارير`, alert: "تنبيه", lv: { Orange: "متوسط", Red: "مرتفع" },
+    zoom: "تقريب", openSrc: "فتح المصدر ↗", more: "مزيد من المعلومات", less: "إخفاء المعلومات", bg: "خلفية", fromArticle: "من الخبر", nearby: "أحداث أخرى في المنطقة نفسها",
+    srcs: "التقارير المصدر", noMore: "لم يُعثر على معلومات إضافية.", readWiki: "تابع على ويكيبيديا ↗", lvBtn: "📡 مباشر", lvTitle: "بث مباشر من المنطقة", lvNews: "قنوات أخبار مباشرة",
+    lvNone: "لا يوجد بث مباشر في هذه المنطقة الآن.", lvSearching: "جارٍ البحث عن بث مباشر…", lvVid: "▶ فيديو من الخبر", lvVidT: "فيديو من الخبر",
+    lvFail: "تعذّر الوصول إلى بث المنطقة الآن. يمكنك مشاهدة قنوات الأخبار أدناه.",
+    openYt: "فتح في يوتيوب ↗", tvLive: "مباشر", searching: "جارٍ جمع المعلومات…", translating: "جارٍ الترجمة…", autoTx: "ترجمة آلية", original: "النص الأصلي",
+    close: "إغلاق", refreshing: "جارٍ تحديث البيانات…", newEv: (c, t) => `${c} جديد: ${t}`,
+    fatalTitle: "تعذّر تشغيل WorldMind", noCesium: "لم تُحمَّل مكتبة الخريطة. تحقق من الاتصال وأعد التحميل.", noGL: "لا يستطيع هذا المتصفح تشغيل الخريطة ثلاثية الأبعاد. جرّب Chrome.",
+    alt: "الارتفاع", exit: "تصغير", zoomIn: "تقريب",
+    prec: "الموقع", prec_exact: "دقيق", prec_city: "مدينة", prec_country: "البلد كله (تقريبي)", prec_capital: "العاصمة (مفترضة)", prec_inst: "عنوان المؤسسة",
+    N: "ش", S: "ج", E: "ق", W: "غ",
+    liveLbl: "مباشر", newsWM: "أخبار WM", backWorld: "العودة إلى العالم كله", flyTo: (v) => `الطيران إلى ${v}`, flyScene: "الطيران إلى المكان",
+    readingLoc: "قراءة الخبر · تحديد المكان الدقيق", readingSite: "قراءة الخبر · تحديد المكان", reading: "جارٍ قراءة الخبر…", otherOutlets: "ماذا تقول المصادر الأخرى", resize: "تغيير الحجم",
+    settings: "الإعدادات", worldView: "عرض الأرض", sClouds: "السحب", sCloudsD: "سحب حية من الأقمار الصناعية، تُحدَّث كل 3 ساعات", sNight: "أضواء المدن ليلًا", sNightD: "أضواء ناسا الليلية على الجانب المظلم",
+    sSun: "الليل والنهار", sSunD: "الموقع الحقيقي للشمس · إيقاف = نهار دائم", sAtmo: "توهج الغلاف الجوي", sAtmoD: "هالة فيروزية حول الأرض", sRot: "دوران تلقائي", sRotD: "تدور الكرة ببطء عند عدم الاستخدام",
+    perf: "الأداء", qSaver: "توفير الطاقة", qBal: "متوازن", qMax: "أقصى وضوح", qSaverN: "أخف على البطارية والأجهزة القديمة. أنعم قليلًا من بعيد.", qBalN: "واضح وسلس. موصى به.", qMaxN: "أوضح صورة. يستهلك طاقة أكثر؛ قد يتقطع على الأجهزة القديمة.",
+    sAnim: "الحركات", sAnimD: "حلقات نابضة وإضاءة المباني", language: "اللغة", ayRef: "سورة المؤمنون · ١١٦", privacy: "الخصوصية",
+  },
+  de: {
+    photoNews: "Nachrichtenfoto", photoWho: "Wer / wo", news: "Nachrichten", worldEv: "Weltgeschehen", hint: "Tippe auf eine Meldung, um sie zu öffnen  ·  Heranzoomen, um hinzufliegen", live: "LIVE ·", updated: "aktualisiert", connecting: "verbinde…",
+    search: "Land, Stadt oder Stichwort suchen", all: "Alle", netCat: "Verknüpft", onlyActive: "Nur laufende",
+    catisma: "Konflikt", protesto: "Protest", siyaset: "Politik", afet: "Katastrophe", diger: "Sonstiges",
+    on: "● läuft", off: "○ evtl. beendet", onL: "● Läuft", offL: "○ Evtl. beendet", nw: "NEU", nEv: (n) => `${n} Ereignisse`,
+    empty: "Keine Ereignisse für diesen Filter.", emptyView: "Keine passenden Ereignisse im sichtbaren Bereich. Karte verschieben oder herauszoomen.", loadingData: "Daten werden geladen…",
+    every: (n) => `alle ${n} Min.`, loading: "lädt", err: "Fehler", timeout: "Zeitüberschreitung", blocked: "Zugriff blockiert", nodata: "keine Daten",
+    src_gdacs: "GDACS-Katastrophen", src_wiki: "Wikipedia-Ereignisse", src_bsky: "Nachrichtenagenturen", src_rss: "RSS-Feeds", src_deep: "Artikelanalyse", src_usgs: "USGS-Erdbeben",
+    prec_region: "Region", why: "Warum hier", why_dateline: (v) => `Ortsmarke: ${v}`, why_text: (v) => `im Bericht genannter Ort: ${v}`, why_venue: (v) => `Ort: ${v}`,
+    why_summit: (v) => `Gastgeberstadt von ${v}`, why_inst: (v) => `zuständige Institution: ${v}`, why_capital: (v) => `Regierungssitz: ${v}`, why_seat: (v) => `Regionalbehörde: ${v}`, why_wiki: (v) => `Wikipedia-Link: ${v}`, why_anchor: (v) => `Person/Institution im Bericht: ${v}`, why_likely: (v) => `wahrscheinlichster Ort (geschätzt): ${v}`,
+    now: "jetzt", min: (n) => `vor ${n} Min.`, hr: (n) => `vor ${n} Std.`, day: (n) => `vor ${n} T.`, last24: "letzte 24 Stunden", today: "heute", yesterday: "gestern",
+    source: "Quelle", reports: (n) => `${n} Berichte`, alert: "Warnung", lv: { Orange: "mittel", Red: "hoch" },
+    zoom: "Heranzoomen", openSrc: "Quelle öffnen ↗", more: "Mehr Informationen", less: "Informationen ausblenden", bg: "Hintergrund", fromArticle: "Aus dem Bericht", nearby: "Weitere Ereignisse in der Gegend",
+    srcs: "Quellberichte", noMore: "Keine weiteren Informationen gefunden.", readWiki: "Weiter auf Wikipedia ↗", lvBtn: "📡 Live", lvTitle: "Livestreams aus der Region", lvNews: "Live-Nachrichtensender",
+    lvNone: "Derzeit keine Livestreams in dieser Region.", lvSearching: "Livestreams werden gesucht…", lvVid: "▶ Video aus dem Bericht", lvVidT: "Video aus dem Bericht",
+    lvFail: "Die Streams der Region sind gerade nicht erreichbar. Du kannst die Nachrichtensender unten ansehen.",
+    openYt: "Auf YouTube öffnen ↗", tvLive: "LIVE", searching: "Informationen werden gesammelt…", translating: "Wird übersetzt…", autoTx: "Maschinelle Übersetzung", original: "Original",
+    close: "Schließen", refreshing: "Daten werden aktualisiert…", newEv: (c, t) => `Neu (${c}): ${t}`,
+    fatalTitle: "WorldMind konnte nicht starten", noCesium: "Die Kartenbibliothek wurde nicht geladen. Verbindung prüfen und neu laden.", noGL: "Dieser Browser kann die 3D-Karte nicht ausführen. Versuche Chrome.",
+    alt: "Höhe", exit: "Herauszoomen", zoomIn: "Heranzoomen",
+    prec: "Ort", prec_exact: "Genau", prec_city: "Stadt", prec_country: "Landesweit (ungefähr)", prec_capital: "Hauptstadt (angenommen)", prec_inst: "Adresse der Institution",
+    N: "N", S: "S", E: "O", W: "W",
+    liveLbl: "LIVE", newsWM: "NACHRICHTEN WM", backWorld: "Zurück zur ganzen Welt", flyTo: (v) => `Nach ${v} fliegen`, flyScene: "Zum Ort fliegen",
+    readingLoc: "Bericht wird gelesen · genauer Ort wird gesucht", readingSite: "Bericht wird gelesen · Ort wird gesucht", reading: "Bericht wird gelesen…", otherOutlets: "Was andere Medien berichten", resize: "Größe ändern",
+    settings: "Einstellungen", worldView: "Erdansicht", sClouds: "Wolken", sCloudsD: "Live-Satellitenwolken, alle 3 Stunden aktualisiert", sNight: "Stadtlichter bei Nacht", sNightD: "NASA-Nachtlichter auf der dunklen Seite",
+    sSun: "Tag und Nacht", sSunD: "Echter Sonnenstand · aus = immer Tag", sAtmo: "Atmosphärenleuchten", sAtmoD: "Türkiser Schein um die Erde", sRot: "Automatisch drehen", sRotD: "Der Globus dreht sich langsam im Ruhezustand",
+    perf: "Leistung", qSaver: "Akku sparen", qBal: "Ausgewogen", qMax: "Maximale Schärfe", qSaverN: "Schonender für Akku und ältere Geräte. Aus der Ferne etwas weicher.", qBalN: "Scharf und flüssig. Empfohlen.", qMaxN: "Schärfstes Bild. Braucht mehr Energie; kann auf älteren Geräten ruckeln.",
+    sAnim: "Animationen", sAnimD: "Pulsierende Ringe und Gebäudeleuchten", language: "Sprache", ayRef: "Al-Mu'minun · 23:116", privacy: "Datenschutz",
   },
 };
 const CATS = { catisma: "#e5484d", protesto: "#f2a33a", siyaset: "#9a88f5", afet: "#3fb5c9", diger: "#9aa4b2" };
@@ -870,9 +1216,11 @@ const S = {
     usgs:  { per: 5,  durum: "busy", n: 0, msg: "", t: null },
   },
 };
-const LANG = "en";
-const T = (k, ...a) => { const v = L.en[k] ?? k; return typeof v === "function" ? v(...a) : v; };
-const loc = () => "en-GB";
+// [2.2] Dil: Settings > Language. Logo (WORLDMIND) hiçbir dilde çevrilmez.
+const LANGS = { en: "English", tr: "Türkçe", it: "Italiano", ru: "Русский", fr: "Français", es: "Español", zh: "中文", ar: "العربية", de: "Deutsch" };
+const LANG = (() => { try { const l = JSON.parse(localStorage.getItem("wm-set") || "{}").lang; return L[l] ? l : "en"; } catch { return "en"; } })();
+const T = (k, ...a) => { const v = L[LANG]?.[k] ?? L.en[k] ?? k; return typeof v === "function" ? v(...a) : v; };
+const loc = () => ({ en: "en-GB", tr: "tr-TR", it: "it-IT", ru: "ru-RU", fr: "fr-FR", es: "es-ES", zh: "zh-CN", ar: "ar", de: "de-DE" }[LANG] || "en-GB");
 
 const $ = (id) => document.getElementById(id);
 /* Açılış: WORLDMIND logosu canlanır, sonra dünya uzaktan yaklaşır */
@@ -1170,7 +1518,7 @@ class LRU extends Map {
 const TXC = new LRU(500);
 // Tam çeviri: metinler parçalara bölünür (≤3.500 karakter), satır sayısı tutmazsa tek tek çevrilir; hiçbir metin yarım kalmaz.
 async function gtx(q, tl) {
-  const j = await getJSON("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl=" + tl + "&q=" + encodeURIComponent(q), 12000);
+  const j = await getJSON("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl=" + (tl === "zh" ? "zh-CN" : tl) + "&q=" + encodeURIComponent(q), 12000);
   return { text: (j[0] || []).map((x) => x[0]).join(""), src: j[2] };
 }
 async function translateMany(texts, tl) {
@@ -1216,7 +1564,7 @@ async function translateVisible(evs) {
 }
 async function translateVisibleNow(evs) {
   const lang = LANG;
-  const need = evs.filter((e) => !e.tx?.[lang] || e.tx[lang].title === undefined).filter((e) => !e.titleEn).slice(0, 120);
+  const need = evs.filter((e) => !e.tx?.[lang] || e.tx[lang].title === undefined).filter((e) => lang !== "en" || !e.titleEn).slice(0, 120);
   for (let k = 0; k < need.length; k += 30) {
     const grp = need.slice(k, k + 30);
     try {
@@ -1240,26 +1588,39 @@ try {
     animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
     sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false,
     selectionIndicator: false, requestRenderMode: true, maximumRenderTimeChange: Infinity,
+    baseLayer: false,                                            // [2.6] taban görüntü aşağıda, yedekli zincirle eklenir
   });
 } catch { fatal(T("noGL")); return; }
 const scene = viewer.scene;
 scene.globe.show = true; scene.globe.baseColor = Cesium.Color.fromCssColorString("#1d3b57");
-// Dünya görüntüsü: Cesium varsayılan yüksek çözünürlüklü uydu görüntüsü (önceki modellerdeki gibi).
-// Yüklenemezse (hata ya da 10 sn'de hazır değilse) aynı netlikte Esri uydu döşemelerine geçilir. İkisi de yakınlaştıkça sokak seviyesine kadar netleşir.
+// [2.2] Ekran kartı bağlantısı koparsa (zayıf telefonlarda olabilir) siyah ekranda kalmak yerine sayfa kendini yeniler
+scene.canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); try { sessionStorage.setItem("wm-skip-splash", "1"); } catch {} setTimeout(() => location.reload(), 600); }, false);
+scene.renderError.addEventListener(() => { try { sessionStorage.setItem("wm-skip-splash", "1"); } catch {} setTimeout(() => location.reload(), 1200); });
+// [2.6] Dünya görüntüsü: sınırlara karşı yedekli zincir. Ekran hiçbir zaman boş kalmaz.
+//  1) Esri uydu görüntüsü (sokak seviyesine kadar net; Cesium'un aylık oturum hakkını HARCAMAZ)
+//  2) Esri çalışmazsa Bing (Cesium üzerinden)
+//  3) O da çalışmazsa harita kütüphanesiyle gelen NaturalEarth Dünya görüntüsü (her zaman var, cihazda saklı)
 (() => {
-  let swapped = false;
-  const toEsri = () => {
-    if (swapped) return; swapped = true;
-    const b0 = viewer.imageryLayers.get(0); if (b0 && !b0.wmFx) viewer.imageryLayers.remove(b0);   // [2.4] yalnızca taban katman değişir; gece ışıkları ve bulutlar kalır
-    viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-      url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", maximumLevel: 19, credit: "Esri, Maxar, Earthstar Geographics" }), 0);
+  const BASES = [
+    () => new Cesium.UrlTemplateImageryProvider({ url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", maximumLevel: 19, credit: "Esri, Maxar, Earthstar Geographics" }),
+    () => Cesium.IonImageryProvider.fromAssetId(2),
+    () => Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")),
+  ];
+  let idx = -1, cur = null;
+  async function next() {
+    if (++idx >= BASES.length) return;
+    let prov; try { prov = await BASES[idx](); } catch { return next(); }
+    const l = new Cesium.ImageryLayer(prov);
+    if (cur) viewer.imageryLayers.remove(cur);
+    viewer.imageryLayers.add(l, 0); cur = l;
+    const errs = [];
+    prov.errorEvent?.addEventListener(() => {                   // 20 sn içinde 12'den fazla hata: bir sonrakine geç
+      const now = Date.now(); errs.push(now); while (errs.length && now - errs[0] > 20000) errs.shift();
+      if (errs.length > 12 && cur === l) next();
+    });
     scene.requestRender();
-  };
-  const base = viewer.imageryLayers.get(0);
-  if (!base) { toEsri(); return; }
-  base.errorEvent?.addEventListener(toEsri);
-  base.readyEvent?.addEventListener((prov) => { let n = 0; prov.errorEvent?.addEventListener(() => { if (++n > 6) toEsri(); }); });
-  setTimeout(() => { if (!base.ready) toEsri(); }, 10000);
+  }
+  next();
 })();
 
 viewer.targetFrameRate = 30;                                   // akıcı ama tableti yormayan kare hızı
@@ -1273,9 +1634,9 @@ const RES = Math.min(DPR, { phone: 1.0, tablet: 1.25, desktop: 1.5 }[PROFILE]);
 const SET = Object.assign({ clouds: true, night: true, sun: true, atmo: true, rotate: PROFILE !== "phone", quality: "balanced", anim: true },
   (() => { try { return JSON.parse(localStorage.getItem("wm-set") || "{}") || {}; } catch { return {}; } })());
 const QUAL = {
-  saver: { res: 1.0, sse: 2.4, tiles: 20, cache: 120, note: "Lighter on the battery and older devices. Slightly softer far away." },
-  balanced: { res: RES, sse: PROFILE === "phone" ? 1.8 : 1.5, tiles: 12, cache: PROFILE === "phone" ? 150 : 300, note: "Sharp and smooth. Recommended." },
-  max: { res: Math.min(DPR, 2), sse: 1.2, tiles: 8, cache: 400, note: "Sharpest image. Uses more power; may stutter on older devices." },
+  saver: { res: 1.0, sse: 2.4, tiles: 20, cache: 120, note: "qSaverN" },
+  balanced: { res: RES, sse: PROFILE === "phone" ? 1.8 : 1.5, tiles: 12, cache: PROFILE === "phone" ? 150 : 300, note: "qBalN" },
+  max: { res: Math.min(DPR, 2), sse: 1.2, tiles: 8, cache: 400, note: "qMaxN" },
 };
 const qual = () => QUAL[SET.quality] || QUAL.balanced;   // [2.3] 1.75 → profil bazlı (telefon 1.0, masaüstü 1.5)
 viewer.resolutionScale = RES;
@@ -1404,6 +1765,11 @@ const openNow = () => {
 };
 $("spOpen").addEventListener("click", openNow);
 window.WM_OPEN = openNow;
+if (window.WM_SKIP_SPLASH) {   // [2.2] dil değişimi ya da ekran kartı yenilemesi: giriş tekrar oynamaz, doğrudan Dünya
+  $("splash")?.remove(); document.body.classList.remove("splashing");
+  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(35, 30, 17000000) }); idleSpinFrom = performance.now() + 3500;
+  setTimeout(() => window.startFeeds && window.startFeeds(), 50);
+}
 if (window.WM_WANT_OPEN) { $("spOpen").classList.remove("wait"); setTimeout(openNow, 0); }
 
 const ds = new Cesium.CustomDataSource("olaylar");
@@ -1439,10 +1805,19 @@ function loadTiles() {
       tiles = await Cesium.createGooglePhotorealistic3DTileset(undefined, { showCreditsOnScreen: true, maximumScreenSpaceError: qual().tiles, cacheBytes: 384 * 1024 * 1024,
         dynamicScreenSpaceError: true, foveatedScreenSpaceError: true, cullRequestsWhileMoving: true, cullRequestsWhileMovingMultiplier: 60,
         skipLevelOfDetail: true, preferLeaves: true, progressiveResolutionHeightFraction: 0.5 });
+    } catch { tiles = null; }
+    // [2.6] Google'ın 3D binaları gelmezse (aylık hak bitti ya da servis yok): OpenStreetMap binaları. Arazi açılır ki binalar yere otursun.
+    if (!tiles) {
+      try {
+        const tp = await ensureTerrain(); if (tp) scene.terrainProvider = tp;
+        tiles = await Cesium.createOsmBuildingsAsync({ maximumScreenSpaceError: 16 }); tiles.wmOsm = true;
+      } catch { tiles = null; }
+    }
+    if (tiles) {
       tiles.customShader = glowShader; tiles.show = false;
       tiles.allTilesLoaded.addEventListener(() => { if (tiles.show) { nearCovered = true; sync3D(); } });   // binalar yüklendi: küre altına çekilir
       scene.primitives.add(tiles);
-    } catch { tiles = null; }
+    }
     sync3D(); return tiles;
   })();
   return tilesP;
@@ -1454,7 +1829,7 @@ function sync3D() {
   const near = !!tiles && viewer.camera.positionCartographic.height < NEAR_3D;
   if (!near) nearCovered = false;
   if (tiles) tiles.show = near;
-  const globeOn = !(near && nearCovered);
+  const globeOn = !(near && nearCovered && !tiles.wmOsm);   // OSM binalarında zemin yok: küre (uydu görüntüsü) hep altta kalır
   if (scene.globe.show !== globeOn || tilesOn !== near) { scene.globe.show = globeOn; tilesOn = near; scene.requestRender(); }
 }
 async function set3D() { await loadTiles(); sync3D(); return !!tiles; }
@@ -1737,7 +2112,7 @@ function dropHalo(ev) { if (!ev.halo) return; viewer.entities.remove(ev.halo); e
 /* 2) yakın görünüm: mahalle kızarıp söner
    Kırmızı ışık doğrudan 3D binaların ve sokakların kendi görüntüsüne, ekran kartında işlenir (CustomShader).
    Kameranın baktığı bölgedeki en yakın 8 olay için yuva vardır; her yuva = konum (xyz) + yarıçap (w). */
-const GLOW_N = 8;
+const GLOW_N = PROFILE === "phone" ? 4 : 8;   // [2.2] telefonda hafif ışık efekti
 const glowShader = new Cesium.CustomShader({
   uniforms: Object.assign({ u_t: { type: Cesium.UniformType.FLOAT, value: 0 } },
     Object.fromEntries([...Array(GLOW_N)].flatMap((_, i) => [[`u_c${i}`, { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(0, 0, 0, 0) }],
@@ -2095,8 +2470,11 @@ function leadParas(txt, n = 5) {
   return out;
 }
 function dateline(txt) {
-  const m = /(?:^|\n)\s*\**([A-Z][A-Z .'’-]{2,28}?)(?:,\s*[A-Z][A-Za-z.]+)?\**\s*(?:,\s*[A-Z][a-z]{2,8}\.?\s+\d{1,2}\s*)?\(?(?:Reuters|AP|AFP|Bloomberg)\)?\s*[-–—]/.exec(txt);
-  return m ? m[1].trim().toLowerCase().replace(/(^|[\s-])\S/g, (x) => x.toUpperCase()) : null;
+  // [2.2] Türkçe harfler ve Türk ajansları da: "İSTANBUL, 21 Ekim (AA) –"
+  const m = /(?:^|\n)\s*\**([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ .'’-]{2,28}?)(?:,\s*[A-ZÇĞİÖŞÜ][A-Za-zçğıöşüÇĞİÖŞÜ.]+)?\**\s*(?:,\s*(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,8}\.?\s+\d{1,2}|\d{1,2}\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,8})\s*)?\(?(?:Reuters|AP|AFP|Bloomberg|AA|Anadolu|DHA|İHA|Xinhua)\)?\s*[-–—]/.exec(txt);
+  if (!m) return null;
+  const raw = m[1].trim(), trk = /[ÇĞİÖŞÜ]/.test(raw), lc = trk ? "tr" : "en";
+  return raw.toLocaleLowerCase(lc).replace(/(^|[\s-])\S/g, (x) => x.toLocaleUpperCase(lc));
 }
 const VENUE = new RegExp(`(?:\\bat|\\bin|\\binside|\\boutside|\\bnear)\\s+(?:the\\s+)?((?:${CAP}\\s+){0,4}(?:Centre|Center|Hall|Exhibition|Expo|Park|Square|Stadium|Arena|Museum|Theatre|Theater|Forum|Palace|Pavilion|Gallery|Library|Cathedral|Mosque|Church|University|School|Hospital|Airport|Station|Port|Market|Bridge|Street|Avenue|Boulevard|Embassy|Ministry|Parliament|Building|Plant|Factory|Camp|Prison|Court|Kremlin)(?:\\s+(?:of\\s+)?${CAP}){0,3})`, "gu");
 const DEEPC = (() => { try { return JSON.parse(localStorage.getItem("wm-deep") || "{}"); } catch { return {}; } })();
@@ -2223,7 +2601,9 @@ function applyFilter() {
 
 /* ---------- Arayüz ---------- */
 function renderStatic() {
-  document.documentElement.lang = LANG;
+  document.documentElement.lang = LANG; document.documentElement.dir = LANG === "ar" ? "rtl" : "ltr";
+  { const n = $("newsLbl"); n.textContent = T("newsWM"); n.dataset.t = T("newsWM"); }
+  document.querySelectorAll("[data-ia]").forEach((el) => el.setAttribute("aria-label", T(el.dataset.ia)));
   document.querySelectorAll("[data-i]").forEach((el) => (el.textContent = T(el.dataset.i)));
   $("q").placeholder = T("search");
 
@@ -2380,9 +2760,9 @@ const ZO_SVG = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><defs><l
 let zBusy = "";
 function zoomBtnHTML(ev) {
   const eng = document.body.classList.contains("engaged"), here = eng && hudEv && hudEv.id === ev.id;
-  if (here) return `<button class="zbtn out" id="zBtn" data-z="out">${ZO_SVG}<span class="zw"><span class="zt gx" data-t="${esc(T("exit"))}">${esc(T("exit"))}</span><small>Back to the whole world</small></span></button>`;
+  if (here) return `<button class="zbtn out" id="zBtn" data-z="out">${ZO_SVG}<span class="zw"><span class="zt gx" data-t="${esc(T("exit"))}">${esc(T("exit"))}</span><small>${esc(T("backWorld"))}</small></span></button>`;
   const site = ev.spot || placeOf(ev) || ev.g?.en || "";
-  return `<button class="zbtn${zBusy === ev.id ? " busy" : ""}" id="zBtn" data-z="in">${ZI_SVG}<span class="zw"><span class="zt gx" data-t="${esc(T("zoomIn"))}">${esc(T("zoomIn"))}</span><small>${zBusy === ev.id ? "Reading the report · locating the site" : esc(site ? "Fly to " + site : "Fly to the scene")}</small></span></button>`;
+  return `<button class="zbtn${zBusy === ev.id ? " busy" : ""}" id="zBtn" data-z="in">${ZI_SVG}<span class="zw"><span class="zt gx" data-t="${esc(T("zoomIn"))}">${esc(T("zoomIn"))}</span><small>${zBusy === ev.id ? esc(T("readingSite")) : esc(site ? T("flyTo", site) : T("flyScene"))}</small></span></button>`;
 }
 function syncZoomBtn() {
   const ev = S.sel && S.events.get(S.sel), bar = document.querySelector("#card .zbar");
@@ -2393,7 +2773,7 @@ function syncHudOut() {
   // Kart kapalıyken yaklaşmadan çıkış yine aynı tasarımda ekranın altında
   const b = $("hudOut"); if (!b) return;
   const show = document.body.classList.contains("engaged") && $("card").hidden;
-  if (show && !b.innerHTML) b.innerHTML = `${ZO_SVG.replace(/zg2/g, "zg3")}<span class="zw"><span class="zt gx" data-t="${esc(T("exit"))}">${esc(T("exit"))}</span><small>Back to the whole world</small></span>`;
+  if (show && !b.innerHTML) b.innerHTML = `${ZO_SVG.replace(/zg2/g, "zg3")}<span class="zw"><span class="zt gx" data-t="${esc(T("exit"))}">${esc(T("exit"))}</span><small>${esc(T("backWorld"))}</small></span>`;
   b.hidden = !show;
 }
 $("card").addEventListener("click", (e) => {
@@ -2442,7 +2822,7 @@ $("listBtn").addEventListener("click", toggleSheet);
     for (const k of KEYS) $("s_" + k).checked = !!SET[k];
     $("s_night").disabled = !SET.sun; $("s_night").closest(".sw").classList.toggle("off", !SET.sun);
     box.querySelectorAll("[data-q]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.q === SET.quality)));
-    $("s_qnote").textContent = qual().note;
+    $("s_qnote").textContent = T(qual().note);
   };
   const show = (o) => { box.hidden = !o; btn.setAttribute("aria-pressed", String(o)); if (o) sync(); };
   btn.addEventListener("click", () => show(box.hidden));
@@ -2455,6 +2835,10 @@ $("listBtn").addEventListener("click", toggleSheet);
     applyLook();
   });
   box.addEventListener("click", (e) => { const b = e.target.closest("[data-q]"); if (!b) return; SET.quality = b.dataset.q; save(); sync(); applyQuality(); });
+  // [2.2] dil: seçilince ayar kaydedilir ve sayfa yeni dilde yeniden açılır (giriş tekrar oynamaz)
+  $("s_lang").innerHTML = Object.entries(LANGS).map(([k, n]) => `<button type="button" data-lang="${k}" lang="${k}" aria-pressed="${k === LANG}">${n}</button>`).join("");
+  $("s_lang").addEventListener("click", (e) => { const b = e.target.closest("[data-lang]"); if (!b || b.dataset.lang === LANG) return;
+    SET.lang = b.dataset.lang; save(); try { sessionStorage.setItem("wm-skip-splash", "1"); } catch {} location.reload(); });
   addEventListener("keydown", (e) => { if (e.key === "Escape" && !box.hidden) show(false); });
   scene.canvas.addEventListener("pointerdown", () => { if (!box.hidden) show(false); }, { passive: true });
 })();
@@ -2535,7 +2919,7 @@ function renderMedia(ev) {
 function renderCard(ev) {
   const arts = (ev.articles || []).slice(0, 8), tx = ev.tx?.[LANG];
   const showOrig = tx && tx.title && tx.title !== ev.title;
-  const lv = ev.alertLv ? (L.en.lv[ev.alertLv] || ev.alertLv) : "";
+  const lv = ev.alertLv ? ((L[LANG]?.lv || L.en.lv)[ev.alertLv] || ev.alertLv) : "";
   const card = $("card"), old = $("cbody");
   const keep = old && card.dataset.ev === ev.id ? old.scrollTop : 0;   // [2.4] aynı haber yeniden çizilince okunan yer korunur
   card.dataset.ev = ev.id;
@@ -2565,7 +2949,7 @@ function renderCard(ev) {
     ${ev.lvOpen ? `<div class="more">${liveHTML(ev)}</div>` : ""}
     </div>
     <div class="zbar"></div>
-    <i class="grip g-br" title="Resize"></i><i class="grip g-tl" title="Resize"></i><i class="grip g-t" title="Resize"></i>`;
+    <i class="grip g-br" title="${esc(T("resize"))}"></i><i class="grip g-tl" title="${esc(T("resize"))}"></i><i class="grip g-t" title="${esc(T("resize"))}"></i>`;
   if (ev.media) renderMedia(ev); else loadMedia(ev);
   $("cx").onclick = closeSel;
   $("moreBtn").onclick = () => { ev.moreOpen = !ev.moreOpen; renderCard(ev); if (ev.moreOpen) { loadMore(ev); requestAnimationFrame(() => $("more")?.scrollIntoView({ block: "start", behavior: "smooth" })); } };
@@ -2577,16 +2961,17 @@ function renderCard(ev) {
 // Çeviri, orijinalin sayılarını ve özel adlarını korumalı; uzunluk makul olmalı. Aksi hâlde çeviri reddedilir.
 function translationFaithful(orig, tr) {
   if (!tr) return false;
-  const ratio = tr.length / Math.max(1, orig.length); if (ratio < 0.4 || ratio > 2.6) return false;
+  const nonLatin = ["zh", "ar", "ru"].includes(LANG);                       // [2.2] farklı alfabe: özel adlar harf harf korunmaz, uzunluk da değişir
+  const ratio = tr.length / Math.max(1, orig.length); if (ratio < (LANG === "zh" ? 0.12 : 0.4) || ratio > 2.6) return false;
   const nums = orig.match(/\d+/g) || []; if (nums.some((n) => !tr.includes(n))) return false;
   const names = (orig.match(/(?<=\s)\p{Lu}[\p{L}'’-]{3,}/gu) || []).map((w) => norm(w).slice(0, 4));
-  if (names.length >= 2) { const nt = norm(tr); const kept = names.filter((w) => nt.includes(w)).length; if (kept / names.length < 0.4) return false; }
+  if (names.length >= 2 && !nonLatin) { const nt = norm(tr); const kept = names.filter((w) => nt.includes(w)).length; if (kept / names.length < 0.4) return false; }
   return true;
 }
 async function translateEvent(ev) {
   const lang = LANG;
   if (ev.tx?.[lang]?.full) return;
-  const need = !!ev.titleEn;
+  const need = !!ev.titleEn && lang === "en";
   const texts = [ev.title, ev.ctx || "", ...(ev.articles || []).slice(0, 8).map((a) => a.title || "")];
   if (need && !ev.ctx && !(ev.articles || []).length) return;
   ev.txBusy = true; if (S.sel === ev.id) renderCard(ev);
@@ -2701,11 +3086,11 @@ function moreHTML(ev) {
   if (!paras.length) { const d = cleanPara(ev.description || ev.ctx || ""); if (d.length > 60 && norm(d).slice(0, 50) !== norm(ev.title).slice(0, 50)) paras = [cutAt(d, 600)]; }
   h += `<div class="sec"><h3>${esc(T("fromArticle"))}${ev.domain ? " · " + esc(ev.domain) : ""}</h3>`;
   if (paras.length) h += `<p class="lede">${esc(paras[0])}</p>` + paras.slice(1).map((p) => `<p class="par">${esc(p)}</p>`).join("");
-  else h += `<span class="wait">${esc(deepable(ev) && !ev.deep ? "Reading the report…" : T("searching"))}</span>`;
+  else h += `<span class="wait">${esc(deepable(ev) && !ev.deep ? T("reading") : T("searching"))}</span>`;
   h += `</div>`;
   // 2) Aynı olayı veren diğer kaynaklar: her birinden haberin özünü taşıyan bir paragraf
-  if (ev.rel?.length) h += `<div class="sec"><h3>Other outlets report</h3>${ev.rel.map((r) => `<blockquote>${esc(r.text)}<cite><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.host)} ↗</a></cite></blockquote>`).join("")}</div>`;
-  else if (ev.relBusy) h += `<div class="sec"><h3>Other outlets report</h3><span class="wait">${esc(T("searching"))}</span></div>`;
+  if (ev.rel?.length) h += `<div class="sec"><h3>${esc(T("otherOutlets"))}</h3>${ev.rel.map((r) => `<blockquote>${esc(r.text)}<cite><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.host)} ↗</a></cite></blockquote>`).join("")}</div>`;
+  else if (ev.relBusy) h += `<div class="sec"><h3>${esc(T("otherOutlets"))}</h3><span class="wait">${esc(T("searching"))}</span></div>`;
   // 3) Arka plan (Wikipedia)
   h += `<div class="sec"><h3>${esc(T("bg"))}</h3>`;
   if (!m) h += `<span class="wait">${esc(T("searching"))}</span>`;
@@ -2829,7 +3214,7 @@ async function sharpen(ev) {
 }
 async function pinpoint(ev, run) {
   zBusy = ev.id; syncZoomBtn();
-  $("hudCoord").textContent = "Reading the report · locating the exact site";
+  $("hudCoord").textContent = T("readingLoc");
   try { await Promise.race([(async () => { try { await refineOne(ev); } catch {} try { await deepLocate(ev); } catch {} await sharpen(ev); })(), sleep(24000)]); } catch {}
   if (zBusy === ev.id) { zBusy = ""; syncZoomBtn(); }
   if (run === mission) { $("hudName").textContent = placeName0(ev) || $("hudName").textContent; $("hudCoord").textContent = dms(ev.lat, ev.lon); }
@@ -2847,6 +3232,8 @@ async function flySite(ev, dur, apex, run) {
   return flySphereP(bs, o);
 }
 async function engage(ev) {
+  if (SUN.mode === "flying") return;
+  if (SUN.mode === "sun") await toEarth();                                    // [2.2] güneşteyken haber yakınlaştırılırsa önce Dünya'ya dönülür
   const run = ++mission; hudEv = ev;
   const k = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0.35 : 1;
   const name = placeName0(ev) || ev.g?.en || ev.place?.split(",")[0] || T(ev.cat);
@@ -3090,6 +3477,7 @@ async function loadWiki() {
 }
 
 async function run(key, fn) {
+  if (document.hidden && S.src[key].durum === "ok") return;   // [2.2] arka planda haber çekilmez (pil ve bellek); öne gelince kaldığı yerden devam
   if (S.src[key].durum !== "ok") { S.src[key].durum = "busy"; S.src[key].msg = ""; renderSrcs(); }
   try {
     const list = await fn();
@@ -3266,6 +3654,273 @@ async function loadUSGS() {
 const refreshAll = () => { run("gdacs", loadGDACS); run("eonet", loadEONET); run("wiki", loadWiki); run("rss", loadRSS); run("fnews", loadFreeNews); run("nline", loadNewsline); run("usgs", loadUSGS); };
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { run("gdacs", loadGDACS); watchWiki(); } });
 
+
+/* ---------- [2.2] Güneş: gerçekçi güneş, gizli ayet (besmele + Mü'minûn 116) ve güneş yolculuğu ----------
+   Donmama kuralı: ağır her şey BİR KEZ çizilir (güneş, yıldız katmanları, hat çemberi). Dönme, nefes, dalga ve geçişler
+   CSS ile ekran kartında yapılır; yalnızca "nurla yazılma" anında (≈2 sn) kısa bir çizim döngüsü çalışır. */
+try { scene.sun.show = false; scene.sunBloom = false; } catch {}             // kütüphanenin 6 çizgili yapay güneşi kapalı
+const SUN = { mode: "earth", busy: false, scr: null };
+const AY = { state: 0, busy: false, where: null, ready: null, ring: null, glow: null, RB: 0, box: 0, cx: 0, cy: 0 };
+window.WM_SUN = SUN;
+const SDPR = Math.min(PROFILE === "phone" ? 1.5 : 2, window.devicePixelRatio || 1);
+const LDPR = Math.min(1.25, window.devicePixelRatio || 1);                   // tam ekran katmanlar: bellek dostu çözünürlük
+const mkRnd = (sd) => () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+const AYAH_AR = "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ ۞ فَتَعَٰلَى ٱللَّهُ ٱلۡمَلِكُ ٱلۡحَقُّۖ لَآ إِلَٰهَ إِلَّا هُوَ رَبُّ ٱلۡعَرۡشِ ٱلۡكَرِيمِ ۞";
+// Kabul görmüş mealler (Mü'minûn 23:116)
+const MEAL = {
+  en: ["So exalted is Allah, the Sovereign, the Truth; there is no deity except Him, Lord of the Noble Throne.", "Sahih International"],
+  tr: ["Gerçek hükümdar olan Allah yücedir. O'ndan başka tanrı yoktur. O, yüce arşın Rabbidir.", "Diyanet İşleri"],
+  it: ["Sia esaltato Allah, il vero Re. Non c'è altro dio all'infuori di Lui, il Signore del Trono Sublime.", "Hamza Roberto Piccardo"],
+  ru: ["Превыше всего Аллах, Истинный Властелин! Нет божества, кроме Него, Господа благородного Трона.", "Э. Кулиев"],
+  fr: ["Que soit exalté Allah, le vrai Souverain! Pas de divinité [véritable] en dehors de Lui, le Seigneur du Trône sublime.", "Muhammad Hamidullah"],
+  es: ["¡Exaltado sea Alá, el Rey verdadero! No hay más dios que Él, el Señor del Trono noble.", "Julio Cortés"],
+  zh: ["尊哉真主——真实的君主。除他之外，绝无应受崇拜的。他是高贵的宝座之主。", "马坚"],
+  ar: ["فَتَعَٰلَى ٱللَّهُ ٱلۡمَلِكُ ٱلۡحَقُّۖ لَآ إِلَٰهَ إِلَّا هُوَ رَبُّ ٱلۡعَرۡشِ ٱلۡكَرِيمِ", "مصحف المدينة النبوية – حفص"],
+  de: ["Doch Erhaben ist Allah, der König, der Wahre. Es gibt keinen Gott außer Ihm, dem Herrn des ehrwürdigen Thrones.", "Frank Bubenheim & Nadeem Elyas"],
+};
+
+/* --- gerçekçi güneş çizimi (bir kez) --- */
+function paintSunDisk(g, cx, cy, SR, rnd, corona) {
+  if (corona) {                                                              // çizgisiz, yumuşak taç
+    const S = Math.ceil(SR * 8), k = document.createElement("canvas"); k.width = k.height = S; const kg = k.getContext("2d"), kc = S / 2;
+    for (let i = 0; i < 220; i++) { const a = rnd() * Math.PI * 2, l = SR * (1.1 + Math.pow(rnd(), 1.8) * 1.6), w = 0.12 + rnd() * 0.25;
+      const gr = kg.createRadialGradient(kc, kc, SR * 0.9, kc, kc, l); gr.addColorStop(0, `rgba(255,215,150,${0.035 + rnd() * 0.03})`); gr.addColorStop(1, "rgba(255,160,80,0)");
+      kg.fillStyle = gr; kg.beginPath(); kg.moveTo(kc, kc); kg.arc(kc, kc, l, a - w / 2, a + w / 2); kg.closePath(); kg.fill(); }
+    g.save(); g.globalCompositeOperation = "lighter"; g.filter = `blur(${Math.max(4, SR * 0.08)}px)`; g.drawImage(k, cx - kc, cy - kc); g.restore();
+    const gl = g.createRadialGradient(cx, cy, SR * 0.8, cx, cy, SR * 5); gl.addColorStop(0, "rgba(255,214,140,.5)"); gl.addColorStop(0.2, "rgba(255,170,80,.18)"); gl.addColorStop(0.5, "rgba(255,140,60,.05)"); gl.addColorStop(1, "rgba(255,120,40,0)");
+    g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, SR * 5, 0, 7); g.fill();
+  }
+  const d = g.createRadialGradient(cx, cy, 0, cx, cy, SR); d.addColorStop(0, "#fffef6"); d.addColorStop(0.55, "#fff3cf"); d.addColorStop(0.82, "#ffd27a"); d.addColorStop(0.95, "#ffae45"); d.addColorStop(1, "#ff9433");
+  g.fillStyle = d; g.beginPath(); g.arc(cx, cy, SR, 0, 7); g.fill();
+  g.save(); g.beginPath(); g.arc(cx, cy, SR, 0, 7); g.clip();                // granülasyon
+  const n = Math.min(5000, Math.round(SR * SR * 0.18));
+  for (let i = 0; i < n; i++) { const a = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * SR, s = Math.max(0.6, SR * (0.008 + rnd() * 0.02));
+    g.fillStyle = rnd() < 0.5 ? `rgba(255,190,90,${0.05 + rnd() * 0.08})` : `rgba(255,255,240,${0.04 + rnd() * 0.07})`; g.beginPath(); g.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, s, 0, 7); g.fill(); }
+  g.restore();
+  if (corona) { g.save(); g.globalCompositeOperation = "lighter";
+    for (const a of [2.2, 4.0, 5.6]) { const x = cx + Math.cos(a) * SR, y = cy + Math.sin(a) * SR, r = SR * 0.16; const p = g.createRadialGradient(x, y, 0, x, y, r); p.addColorStop(0, "rgba(255,120,70,.55)"); p.addColorStop(1, "rgba(255,90,40,0)"); g.fillStyle = p; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+    g.restore(); }
+}
+// Dünya'dan bakınca: küçük, göz alıcı, çizgisiz güneş (tek resim; yalnızca yeri değişir)
+(() => { const cv = $("sunSprite"), g = cv.getContext("2d"), S = cv.width, c = S / 2;
+  const gl = g.createRadialGradient(c, c, 0, c, c, c); gl.addColorStop(0, "rgba(255,250,235,1)"); gl.addColorStop(0.06, "rgba(255,240,200,.9)"); gl.addColorStop(0.14, "rgba(255,215,150,.38)");
+  gl.addColorStop(0.35, "rgba(255,190,110,.10)"); gl.addColorStop(1, "rgba(255,170,90,0)"); g.fillStyle = gl; g.fillRect(0, 0, S, S);
+  paintSunDisk(g, c, c, S * 0.04, mkRnd(5), false); })();
+
+/* --- güneşin Dünya ekranındaki yeri (gerçek konum, her çizimde yalnızca hesap) --- */
+const _sp = new Cesium.Cartesian3(), _m3 = new Cesium.Matrix3(), _d = new Cesium.Cartesian3(), _ray = new Cesium.Ray();
+function sunPosWC() {
+  const t = viewer.clock.currentTime;
+  Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(t, _sp);
+  let m = Cesium.Transforms.computeIcrfToFixedMatrix(t, _m3); if (!m) m = Cesium.Transforms.computeTemeToPseudoFixedMatrix(t, _m3);
+  return Cesium.Matrix3.multiplyByVector(m, _sp, new Cesium.Cartesian3());
+}
+const sunEl = $("sunEarth");
+function placeSun() {
+  if (SUN.mode !== "earth") return;
+  const cam = viewer.camera, cp = cam.positionWC, p = sunPosWC();
+  Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(p, cp, _d), _d);
+  const z = Cesium.Cartesian3.dot(_d, cam.directionWC);
+  let vis = z > 0.05 && cam.positionCartographic.height > 300000, sx = 0, sy = 0;
+  if (vis) { _ray.origin = cp; _ray.direction = _d; const hit = Cesium.IntersectionTests.rayEllipsoid(_ray, Cesium.Ellipsoid.WGS84); if (hit && hit.stop > 0) vis = false; }
+  if (vis) { const fr = cam.frustum, tanY = Math.tan(fr.fovy / 2), tanX = tanY * fr.aspectRatio, W = scene.canvas.clientWidth, H = scene.canvas.clientHeight;
+    sx = (Cesium.Cartesian3.dot(_d, cam.rightWC) / z / tanX * 0.5 + 0.5) * W; sy = (0.5 - Cesium.Cartesian3.dot(_d, cam.upWC) / z / tanY * 0.5) * H;
+    vis = sx > -80 && sx < W + 80 && sy > -80 && sy < H + 80; }
+  SUN.scr = vis ? { x: sx, y: sy } : null;
+  if (sunEl.hidden === vis) sunEl.hidden = !vis;
+  if (vis) sunEl.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+  if (AY.where === "earth" && AY.state) { $("ayah").style.opacity = vis ? "" : "0"; if (vis) ayPos(sx, sy); }
+}
+scene.postRender.addEventListener(placeSun);
+
+/* --- basılı tutma halkası ve dokunuş sayacı (ortak) --- */
+const holdRing = $("holdRing");
+function ringShow(x, y, ms) { holdRing.style.left = x + "px"; holdRing.style.top = y + "px"; holdRing.style.setProperty("--d", ms + "ms"); holdRing.classList.remove("run"); holdRing.hidden = false; void holdRing.offsetWidth; holdRing.classList.add("run"); }
+function ringHide() { holdRing.hidden = true; holdRing.classList.remove("run"); }
+function gesture(el, hit, o) {
+  let down = null, taps = 0, lastTap = 0, t1 = 0, t2 = 0;
+  const cancel = () => { clearTimeout(t1); clearTimeout(t2); ringHide(); };
+  el.addEventListener("pointerdown", (e) => {
+    if (!hit(e.clientX, e.clientY)) return;
+    down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, fired: false };
+    if (o.onHold) t1 = setTimeout(() => { if (!down) return; ringShow(down.x, down.y, o.fill); t2 = setTimeout(() => { if (!down) return; down.fired = true; ringHide(); o.onHold(); }, o.fill); }, o.hidden);
+  }, true);
+  el.addEventListener("pointermove", (e) => { if (down && e.pointerId === down.id && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 14) { cancel(); down = null; } }, true);
+  el.addEventListener("pointerup", (e) => {
+    if (!down || e.pointerId !== down.id) return;
+    const dur = performance.now() - down.t, fired = down.fired; cancel(); down = null;
+    if (fired || dur > 380 || !o.onTriple) return;
+    const now = performance.now(); taps = now - lastTap < 650 ? taps + 1 : 1; lastTap = now;
+    if (taps >= 3) { taps = 0; o.onTriple(); }
+  }, true);
+  el.addEventListener("pointercancel", () => { cancel(); down = null; }, true);
+}
+// Dünya ekranında güneş: 3 dokunuş = ayet adımları · 5 sn bekle + 6 sn halka = güneşe yolculuk
+gesture(scene.canvas, (x, y) => SUN.mode === "earth" && SUN.scr && Math.hypot(x - SUN.scr.x, y - SUN.scr.y) < 38,
+  { hidden: 5000, fill: 6000, onHold: () => toSun(), onTriple: () => ayStep("earth") });
+
+/* --- hat çemberi: kubbe düzeni, harf oranları korunur (konformal yerleşim), bir kez hazırlanır --- */
+function loadQuranFont() {
+  if (document.fonts.check('40px "Amiri Quran"')) return Promise.resolve();
+  return new Promise((res) => {
+    let l = document.getElementById("aqf");
+    const go = () => Promise.race([document.fonts.load('100px "Amiri Quran"'), sleep(5000)]).then(res, res);
+    if (!l) { l = document.createElement("link"); l.id = "aqf"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Amiri+Quran&display=block"; l.onload = go; l.onerror = res; document.head.appendChild(l); setTimeout(res, 7000); }
+    else go();
+  });
+}
+function ayPrepare() {
+  if (AY.ready) return AY.ready;
+  AY.ready = (async () => {
+    await loadQuranFont();
+    const FS = 180, fam = document.fonts.check('40px "Amiri Quran"') ? '"Amiri Quran"' : '"Amiri", "Noto Naskh Arabic", serif';
+    const s1 = document.createElement("canvas"), q = s1.getContext("2d"); q.font = `${FS}px ${fam}`;
+    const tw = Math.ceil(q.measureText(AYAH_AR).width + FS * 0.9), th = Math.round(FS * 1.9), yb = Math.round(FS * 1.32);
+    s1.width = tw; s1.height = th; q.font = `${FS}px ${fam}`; q.direction = "rtl"; q.textAlign = "center"; q.textBaseline = "alphabetic";
+    q.fillStyle = "#fff"; q.strokeStyle = "#fff"; q.lineWidth = FS * 0.018; q.lineJoin = "round"; q.fillText(AYAH_AR, tw / 2, yb); q.strokeText(AYAH_AR, tw / 2, yb);
+    const sd = q.getImageData(0, 0, tw, th).data;
+    const RB = Math.min(innerWidth, innerHeight) * 0.4 * SDPR, KK = tw / (2 * Math.PI);
+    const rIn = RB * Math.exp(-yb / KK), rOut = RB * Math.exp((th - yb) / KK), box = Math.ceil(rOut) + 4, N = box * 2;
+    const ring = document.createElement("canvas"); ring.width = ring.height = N; const rg = ring.getContext("2d"), img = rg.createImageData(N, N), od = img.data;
+    const samp = (x, y) => { if (x < 0 || y < 0 || x >= tw - 1 || y >= th - 1) return 0; const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0, i = (y0 * tw + x0) * 4;
+      return (sd[i + 3] * (1 - fx) + sd[i + 7] * fx) * (1 - fy) + (sd[i + tw * 4 + 3] * (1 - fx) + sd[i + tw * 4 + 7] * fx) * fy; };
+    for (let y = 0; y < N; y++) {
+      if (y % 48 === 47) await yieldUI();                                      // parça parça: ekran hiç kilitlenmez
+      const dy = y - box;
+      for (let x = 0; x < N; x++) {
+        const dx = x - box, rr = Math.hypot(dx, dy); if (rr < rIn || rr > rOut) continue;
+        let a = Math.atan2(dx, -dy); if (a < 0) a += Math.PI * 2;              // tepeden saat yönünde (sağdan sola okunur)
+        const al = samp(((tw - a * KK) % tw + tw) % tw, yb + Math.log(rr / RB) * KK); if (al < 2) continue;
+        const t = Math.min(1, Math.max(0, (rr - rIn) / (RB - rIn))), k = (y * N + x) * 4;
+        od[k] = 255 - 20 * t; od[k + 1] = 236 - 60 * t; od[k + 2] = 170 - 110 * t; od[k + 3] = al;   // cilalı altın
+      }
+    }
+    rg.putImageData(img, 0, 0);
+    const glow = document.createElement("canvas"); glow.width = glow.height = N; const gg = glow.getContext("2d");
+    gg.filter = `blur(${Math.round(14 * SDPR)}px)`; gg.drawImage(ring, 0, 0);
+    Object.assign(AY, { ring, RB: RB / SDPR, box: box / SDPR, N });
+    for (const id of ["ayText", "ayGlow"]) { const c = $(id); c.width = c.height = N; c.style.width = c.style.height = N / SDPR + "px"; c.style.margin = `${-N / SDPR / 2}px 0 0 ${-N / SDPR / 2}px`; }
+    $("ayGlow").getContext("2d").drawImage(glow, 0, 0); AY.glow = null;                     // ara çizim bellekten atılır
+    $("ayLight").style.setProperty("--rb", AY.RB + "px");
+  })();
+  return AY.ready;
+}
+function ayPos(x, y) { AY.cx = x; AY.cy = y; $("ayah").style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`; }
+function ayDraw(p, back) {                                                    // nurla yazılma: tepeden saat yönünde açılan dilim + kalem ucunda ışık
+  const c = $("ayText"), g = c.getContext("2d"), N = AY.N, h = N / 2, A0 = -Math.PI / 2, a1 = A0 + p * Math.PI * 2;
+  g.clearRect(0, 0, N, N); if (p <= 0) return;
+  g.save(); g.beginPath(); g.moveTo(h, h); g.arc(h, h, h, A0, a1); g.closePath(); g.clip(); g.drawImage(AY.ring, 0, 0); g.restore();
+  if (p < 1 && !back) { const r = AY.RB * SDPR * 0.93, x = h + Math.cos(a1) * r, y = h + Math.sin(a1) * r, R = 26 * SDPR;
+    const pg = g.createRadialGradient(x, y, 0, x, y, R); pg.addColorStop(0, "rgba(255,250,225,1)"); pg.addColorStop(0.3, "rgba(255,215,140,.55)"); pg.addColorStop(1, "rgba(255,190,90,0)");
+    g.globalCompositeOperation = "lighter"; g.fillStyle = pg; g.beginPath(); g.arc(x, y, R, 0, 7); g.fill(); g.globalCompositeOperation = "source-over"; }
+}
+function ayAnim(ms, from, to) {
+  return new Promise((res) => { const t0 = performance.now(), back = to < from;
+    const f = (now) => { const u = Math.min(1, (now - t0) / ms), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, p = from + (to - from) * e;
+      ayDraw(p, back); $("ayGlow").style.opacity = String(Math.max(0, Math.min(1, (p - 0.85) / 0.15)) * 0.85); if (u < 1) requestAnimationFrame(f); else res(); };
+    requestAnimationFrame(f); });
+}
+function ayFaint(on) { const a = $("ayah"); if (!AY.ring) return; if (on) { ayDraw(1); a.classList.add("faint"); a.hidden = false; } else if (!AY.state) { a.classList.remove("faint"); a.hidden = true; } }
+async function ayStep(where) {
+  if (AY.busy || SUN.busy) return;
+  if (AY.state === 0) {                                                       // 1) aç: güneş parlar → ışık halkası → nurla yazılma → altın dalga
+    AY.busy = true; AY.where = where;
+    const pos = where === "sun" ? SS.c : SUN.scr; if (!pos) { AY.busy = false; return; }
+    if (where === "earth") { sunEl.classList.remove("pulse"); void sunEl.offsetWidth; sunEl.classList.add("pulse"); }
+    await ayPrepare(); ayPos(pos.x, pos.y);
+    const a = $("ayah"); a.classList.remove("faint", "spin", "closing"); a.style.opacity = ""; a.hidden = false; ayDraw(0); $("ayGlow").style.opacity = "0";
+    a.classList.remove("light"); void a.offsetWidth; a.classList.add("light");
+    await sleep(500);
+    await ayAnim(2000, 0, 1);
+    a.classList.add("spin");
+    $("ayHaze").classList.add("on"); if (where === "sun") $("ss").classList.add("gold");
+    AY.state = 1; AY.busy = false;
+  } else if (AY.state === 1) {                                                // 2) meal
+    const m = MEAL[LANG] || MEAL.en; $("ayRef").textContent = T("ayRef"); $("ayTxt").textContent = m[0]; $("aySrc").textContent = m[1];
+    $("ayTxt").dir = LANG === "ar" ? "rtl" : "auto"; $("ayMeal").hidden = false; AY.state = 2;
+  } else await ayClose();                                                     // 3) eski hâline
+}
+async function ayClose(instant) {
+  const a = $("ayah"); $("ayMeal").hidden = true; $("ayHaze").classList.remove("on"); $("ss").classList.remove("gold");
+  if (!AY.state) return;
+  AY.busy = true;
+  if (!instant) {
+    const tr = getComputedStyle($("ayRot")).transform; $("ayRot").style.transform = tr === "none" ? "" : tr; a.classList.remove("spin");
+    await ayAnim(1200, 1, 0);
+  }
+  $("ayRot").style.transform = ""; a.classList.remove("spin", "light"); AY.state = 0; AY.busy = false;
+  if (SUN.mode === "sun" && AY.ring) { a.hidden = false; ayPos(SS.c.x, SS.c.y); ayFaint(true); } else a.hidden = true;
+}
+
+/* --- güneş sahnesi: katmanlı yıldızlar (beyaz / ayetle altına dönen), Samanyolu, yörünge, Dünya --- */
+const SS = { built: "", c: { x: 0, y: 0 }, earth: { x: 0, y: 0 } };
+function starLayer(cv, W, H, gold, RB, cx, cy) {
+  cv.width = Math.round(W * LDPR); cv.height = Math.round(H * LDPR); const g = cv.getContext("2d"); g.setTransform(LDPR, 0, 0, LDPR, 0, 0);
+  const r = mkRnd(11), A = W * H, col = (c) => gold ? (c ? "255,214,140" : "255,228,170") : (c ? "170,215,245" : "236,242,250");
+  const near = (x, y) => gold ? 0.55 + 0.45 * Math.exp(-Math.pow((Math.hypot(x - cx, y - cy) - RB * 1.05) / (RB * 0.9), 2)) : 1;   // ayete yakın olan daha sıcak
+  { const m = document.createElement("canvas"); m.width = Math.ceil(W / 4); m.height = Math.ceil(H / 4); const mg = m.getContext("2d");   // Samanyolu (düşük çözünürlükte, ucuz)
+    for (let i = 0; i < Math.round(A / 900); i++) { const t = r(), x = (-0.1 + t * 1.2) * m.width, y = (0.95 - t * 0.9) * m.height + (r() - 0.5) * (m.height * 0.3); const rr = 2 + r() * 10;
+      const gr = mg.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, `rgba(${gold ? "255,196,105" : "160,185,230"},${(gold ? 0.03 : 0.018) + r() * 0.03})`); gr.addColorStop(1, "rgba(0,0,0,0)"); mg.fillStyle = gr; mg.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+    g.save(); g.filter = "blur(3px)"; g.drawImage(m, 0, 0, W, H); g.restore(); }
+  for (let i = 0; i < Math.round(A / 330); i++) { const x = r() * W, y = r() * H, a = r(); g.fillStyle = `rgba(${col(r() < 0.15)},${((gold ? 0.12 : 0.1) + a * 0.3) * near(x, y)})`; g.fillRect(x, y, 0.9, 0.9); }
+  for (let i = 0; i < Math.round(A / 1600); i++) { const x = r() * W, y = r() * H, a = r(), s = 1.1 + a * 1.1, k = near(x, y);
+    if (gold) { const gr = g.createRadialGradient(x, y, 0, x, y, s * 3.2); gr.addColorStop(0, `rgba(255,205,120,${0.12 * k})`); gr.addColorStop(1, "rgba(255,190,90,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x, y, s * 3.2, 0, 7); g.fill(); }
+    g.fillStyle = `rgba(${col(r() < 0.2)},${((gold ? 0.36 : 0.3) + a * 0.4) * k})`; g.beginPath(); g.arc(x, y, s / 2 + 0.3, 0, 7); g.fill(); }
+  for (let i = 0; i < Math.round(A / 30000); i++) { const x = r() * W, y = r() * H, a = r(), R = (6 + a * 12) * (gold ? 1.15 : 1), k = near(x, y);
+    const gr = g.createRadialGradient(x, y, 0, x, y, R); gr.addColorStop(0, `rgba(${gold ? "255,226,150" : "235,244,255"},${(gold ? 0.6 : 0.55) * k})`); gr.addColorStop(0.22, `rgba(${gold ? "255,196,95" : "200,225,250"},${(gold ? 0.15 : 0.12) * k})`); gr.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, R, 0, 7); g.fill(); g.fillStyle = gold ? "rgba(255,246,220,1)" : "rgba(250,252,255,1)"; g.beginPath(); g.arc(x, y, 1.3 + a * 0.9, 0, 7); g.fill(); }
+}
+function buildSunScene() {
+  const W = innerWidth, H = innerHeight, key = W + "x" + H; if (SS.built === key) return; SS.built = key;
+  const cx = W / 2, cy = H * 0.53, RB = Math.min(W, H) * 0.4, SR = Math.min(W, H) * 0.085; SS.c = { x: cx, y: cy };
+  const ss = $("ss"); ss.style.setProperty("--cx", cx + "px"); ss.style.setProperty("--cy", cy + "px");
+  starLayer($("ssStars"), W, H, false, RB, cx, cy); starLayer($("ssGold"), W, H, true, RB, cx, cy);
+  const cv = $("ssScene"); cv.width = Math.round(W * LDPR); cv.height = Math.round(H * LDPR); const g = cv.getContext("2d"); g.setTransform(LDPR, 0, 0, LDPR, 0, 0);
+  const rx = Math.max(W * 0.44, SR * 5), ry = Math.min(H * 0.22, rx * 0.36), rot = -0.12;          // Dünya'nın yörüngesi
+  g.save(); g.translate(cx, cy); g.rotate(rot); g.strokeStyle = "rgba(110,215,245,.32)"; g.lineWidth = 1.2; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); g.stroke(); g.restore();
+  const ea = W < H ? 1.2 : 0.62, ex = cx + Math.cos(ea) * rx * Math.cos(rot) - Math.sin(ea) * ry * Math.sin(rot), ey = cy + Math.cos(ea) * rx * Math.sin(rot) + Math.sin(ea) * ry * Math.cos(rot);
+  SS.earth = { x: ex, y: ey };
+  paintSunDisk(g, cx, cy, SR, mkRnd(11), true);
+}
+// güneş sahnesinde: 3 dokunuş yalnızca güneşte (ayet adımları), basılı tutma yalnızca Dünya'da (3 sn halka → geri dönüş)
+gesture($("ss"), (x, y) => SUN.mode === "sun" && Math.hypot(x - SS.c.x, y - SS.c.y) < Math.min(innerWidth, innerHeight) * 0.11, { onTriple: () => ayStep("sun") });
+gesture($("ss"), (x, y) => SUN.mode === "sun" && Math.hypot(x - SS.earth.x, y - SS.earth.y) < 34, { hidden: 0, fill: 3000, onHold: () => toEarth() });
+
+/* --- yolculuk --- */
+async function toSun() {
+  if (SUN.busy || SUN.mode !== "earth" || document.body.classList.contains("engaged")) return;
+  SUN.busy = true; if (AY.state) await ayClose(true);
+  try { if (!PANEL.hidden) setPanel(false); if (S.sel) closeSel(); $("settings").hidden = true; } catch {}
+  SUN.mode = "flying"; sunEl.hidden = true;
+  const c = viewer.camera.positionCartographic; SS.back = { lon: c.longitude, lat: c.latitude };
+  await flyP({ destination: Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, 4.2e7), duration: 2.4, easingFunction: Cesium.EasingFunction.QUADRATIC_IN });
+  buildSunScene();
+  const ss = $("ss"), ed = $("ssEarth");
+  ed.style.transition = "none"; ed.style.left = innerWidth / 2 + "px"; ed.style.top = innerHeight / 2 + "px"; ed.classList.add("big"); void ed.offsetWidth;
+  ss.classList.remove("leave"); ss.hidden = false; ss.classList.add("enter"); document.body.classList.add("sunmode");
+  requestAnimationFrame(() => { ed.style.transition = ""; ed.style.left = SS.earth.x + "px"; ed.style.top = SS.earth.y + "px"; ed.classList.remove("big"); });
+  await sleep(2400);
+  viewer.useDefaultRenderLoop = false;                                        // güneşteyken harita tamamen durur
+  SUN.mode = "sun"; SUN.busy = false;
+  ayPrepare().then(() => { if (SUN.mode === "sun" && !AY.state) { ayPos(SS.c.x, SS.c.y); ayFaint(true); } });
+}
+async function toEarth() {
+  if (SUN.busy || SUN.mode !== "sun") return;
+  SUN.busy = true; if (AY.state) await ayClose(true); ayFaint(false); $("ayah").hidden = true;
+  viewer.useDefaultRenderLoop = true; scene.requestRender();
+  const ss = $("ss"), ed = $("ssEarth");
+  ed.style.left = innerWidth / 2 + "px"; ed.style.top = innerHeight / 2 + "px"; ed.classList.add("big");
+  ss.classList.remove("enter"); ss.classList.add("leave");
+  await sleep(1500);
+  ss.hidden = true; ss.classList.remove("leave"); ed.classList.remove("big"); document.body.classList.remove("sunmode");
+  SUN.mode = "flying";
+  const b = SS.back || { lon: Cesium.Math.toRadians(35), lat: Cesium.Math.toRadians(30) };
+  viewer.camera.setView({ destination: Cesium.Cartesian3.fromRadians(b.lon, b.lat, 4.2e7) });
+  await flyP({ destination: Cesium.Cartesian3.fromRadians(b.lon, b.lat, 1.7e7), duration: 2.4, easingFunction: Cesium.EasingFunction.QUADRATIC_OUT });
+  SUN.mode = "earth"; SUN.busy = false; scene.requestRender();
+}
+SUN.toEarth = toEarth;
+addEventListener("resize", () => { if (SUN.mode === "sun") { buildSunScene(); const ed = $("ssEarth"); ed.style.left = SS.earth.x + "px"; ed.style.top = SS.earth.y + "px"; if (AY.state || !$("ayah").hidden) ayPos(SS.c.x, SS.c.y); } });
 
 /* ---------- Mini logo: girişteki sinematik küreyle aynı stil; bir kez çizilir (sürekli yeniden çizim yok) ---------- */
 function miniLogo(cv) { try { window.WMOrb && window.WMOrb.paintStatic(cv); } catch {} }
