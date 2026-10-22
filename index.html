@@ -1129,4 +1129,2072 @@ let lastTxAt = 0, txBusy = false, txLater = 0;
 async function translateVisible(evs) {
   if (document.hidden || txBusy) return;
   const wait = lastTxAt + 5000 - Date.now();
-  if (wait > 0) { clearTimeout(txLat
+  if (wait > 0) { clearTimeout(txLater); txLater = setTimeout(() => renderList(), wait + 50); return; }
+  lastTxAt = Date.now(); txBusy = true;
+  try { await translateVisibleNow(evs); } finally { txBusy = false; }
+}
+async function translateVisibleNow(evs) {
+  const lang = LANG;
+  const need = evs.filter((e) => !e.tx?.[lang] || e.tx[lang].title === undefined).filter((e) => !e.titleEn).slice(0, 120);
+  for (let k = 0; k < need.length; k += 30) {
+    const grp = need.slice(k, k + 30);
+    try {
+      const r = await translateMany(grp.map((e) => e.title), lang);
+      grp.forEach((e, x) => {
+        e.tx = e.tx || {}; e.tx[lang] = { ...(e.tx[lang] || {}) };
+        let t = r.list[x]; if (t && !translationFaithful(e.title, t)) { integrityWarn(e, "çeviri reddedildi"); t = null; }
+        e.tx[lang].title = t && norm(t) !== norm(e.title) ? t : null;
+        TXKEEP.set(e.id, e.tx);
+      });
+    } catch { break; }
+  }
+  if (need.length) renderListNow();                             // [2.3] 30'luk her pakette değil, sonda bir kez
+}
+/* ---------- Harita ---------- */
+if (!window.Cesium) { fatal(T("noCesium")); return; }
+Cesium.Ion.defaultAccessToken = TOKEN;
+let viewer;
+try {
+  viewer = new Cesium.Viewer("globe", {
+    animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
+    sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false,
+    selectionIndicator: false, requestRenderMode: true, maximumRenderTimeChange: Infinity,
+  });
+} catch { fatal(T("noGL")); return; }
+const scene = viewer.scene;
+scene.globe.show = true; scene.globe.baseColor = Cesium.Color.fromCssColorString("#1d3b57");
+// Dünya görüntüsü: Cesium varsayılan yüksek çözünürlüklü uydu görüntüsü (önceki modellerdeki gibi).
+// Yüklenemezse (hata ya da 10 sn'de hazır değilse) aynı netlikte Esri uydu döşemelerine geçilir. İkisi de yakınlaştıkça sokak seviyesine kadar netleşir.
+(() => {
+  let swapped = false;
+  const toEsri = () => {
+    if (swapped) return; swapped = true;
+    const b0 = viewer.imageryLayers.get(0); if (b0 && !b0.wmFx) viewer.imageryLayers.remove(b0);   // [2.4] yalnızca taban katman değişir; gece ışıkları ve bulutlar kalır
+    viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+      url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", maximumLevel: 19, credit: "Esri, Maxar, Earthstar Geographics" }), 0);
+    scene.requestRender();
+  };
+  const base = viewer.imageryLayers.get(0);
+  if (!base) { toEsri(); return; }
+  base.errorEvent?.addEventListener(toEsri);
+  base.readyEvent?.addEventListener((prov) => { let n = 0; prov.errorEvent?.addEventListener(() => { if (++n > 6) toEsri(); }); });
+  setTimeout(() => { if (!base.ready) toEsri(); }, 10000);
+})();
+
+viewer.targetFrameRate = 30;                                   // akıcı ama tableti yormayan kare hızı
+// Yüksek çözünürlük: ekranın gerçek piksel yoğunluğunda çiz (tablette 2x), kenar yumuşatma açık, uzaktan da ayrıntılı görüntü
+viewer.useBrowserRecommendedResolution = false;
+// [2.3] Cihaz profili: telefon / tablet / masaüstü. Netlik profile göre, kasma yok.
+const PROFILE = (() => { const coarse = matchMedia("(pointer:coarse)").matches, m = Math.min(screen.width, screen.height); return coarse && m < 600 ? "phone" : coarse ? "tablet" : "desktop"; })();
+const DPR = window.devicePixelRatio || 1;
+const RES = Math.min(DPR, { phone: 1.0, tablet: 1.25, desktop: 1.5 }[PROFILE]);   // [2.3] 1.75 → profil bazlı (telefon 1.0, masaüstü 1.5)
+viewer.resolutionScale = RES;
+scene.postProcessStages.fxaa.enabled = true;                    // kenar yumuşatma: düşük çözünürlükte bile pürüzsüz kenar
+scene.globe.maximumScreenSpaceError = PROFILE === "phone" ? 1.8 : 1.5;   // [2.3] 1.4 → 1.5/1.8: gözle fark yok, döşeme sayısı ~%40 az
+scene.globe.tileCacheSize = PROFILE === "phone" ? 150 : 300;
+scene.globe.loadingDescendantLimit = 12;
+// Güvenlik freni: ciddi boğulmada (≈14 fps altı, art arda) bir kademe iner
+(() => {
+  let n = 0, acc = 0, last = performance.now(), bad = 0;
+  scene.postRender.addEventListener(() => {
+    const now = performance.now(), dt = now - last; last = now;
+    if (dt > 300) return; acc += dt; if (++n < 45) return;
+    const ms = acc / n; n = 0; acc = 0;
+    if (ms > 70 && ++bad >= 3 && viewer.resolutionScale > 1) { viewer.resolutionScale = Math.max(1, viewer.resolutionScale - 0.25); bad = 0; }
+    else if (ms < 40) bad = 0;
+  });
+})();
+// [2.4] Gerçek Dünya: güneşin şu anki konumuna göre gece-gündüz, gece tarafında şehir ışıkları, canlı bulutlar, kalın turkuaz atmosfer
+scene.skyAtmosphere.show = true;
+scene.skyAtmosphere.hueShift = -0.06;            // maviden turkuaza
+scene.skyAtmosphere.saturationShift = 0.12;
+scene.skyAtmosphere.brightnessShift = 0.18;
+try { scene.skyAtmosphere.atmosphereLightIntensity = 62; } catch {}
+scene.globe.dynamicAtmosphereLighting = false;   // hale, gece tarafında da Dünya'yı çevreler
+scene.globe.enableLighting = true;
+scene.globe.lightingFadeOutDistance = 1.2e6;     // yakında (şehir/sokak) gölge yok: görüntü her zaman net ve aydınlık
+scene.globe.lightingFadeInDistance = 3.5e6;
+scene.globe.nightFadeOutDistance = 1.2e6;
+scene.globe.nightFadeInDistance = 3.5e6;
+viewer.clock.shouldAnimate = false;
+const syncSun = () => { viewer.clock.currentTime = Cesium.JulianDate.now(); scene.requestRender(); };
+syncSun(); setInterval(syncSun, 60000);          // dakikada bir: güneş ilerler, tek kare çizilir (sürekli çizim yok)
+// Pus yok: uzaktan Dünya'yı beyazlatan yer atmosferi ve sis kapalı; Dünya'nın kenarındaki ince mavi hale (gökyüzü atmosferi) kalır
+scene.globe.showGroundAtmosphere = false;
+scene.fog.enabled = false;
+// Canlı renkler: uydu görüntüsü biraz daha doygun ve kontrastlı (Cesium görüntüsü de Esri yedeği de)
+const vivid = (l) => { if (!l || l.wmFx) return; l.saturation = 1.08; l.contrast = 1.05; l.brightness = 1.0; l.gamma = 1.0; };   // [2.4] doğal renkler
+for (let i = 0; i < viewer.imageryLayers.length; i++) vivid(viewer.imageryLayers.get(i));
+viewer.imageryLayers.layerAdded.addEventListener((l) => { vivid(l); fxLayersTop(); scene.requestRender(); });
+// Gece ışıkları (NASA Black Marble) ve canlı bulutlar (3 saatte bir güncellenen uydu bulut haritası). Yalnızca uzaktan görünür, yaklaşınca söner.
+const FXL = { night: null, clouds: null };
+function fxLayersTop() { for (const l of [FXL.night, FXL.clouds]) if (l && viewer.imageryLayers.contains(l)) viewer.imageryLayers.raiseToTop(l); }
+function addNight() {
+  const add = (prov) => { const l = viewer.imageryLayers.addImageryProvider(prov); l.wmFx = 1; l.dayAlpha = 0.0; l.nightAlpha = 1.0; l.brightness = 1.35; FXL.night = l; fxFade(); return l; };
+  let fails = 0;
+  const gibs = new Cesium.UrlTemplateImageryProvider({ url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png",
+    maximumLevel: 8, credit: "NASA Black Marble" });
+  const l = add(gibs);
+  gibs.errorEvent.addEventListener(async () => { if (++fails !== 4) return;
+    try { viewer.imageryLayers.remove(l); add(await Cesium.SingleTileImageryProvider.fromUrl("https://clouds.matteason.co.uk/images/2048x1024/earth-night.jpg", { credit: "NASA" })); } catch {} });
+}
+async function addClouds() {
+  const res = PROFILE === "desktop" ? "4096x2048" : "2048x1024";
+  try {
+    const prov = await Cesium.SingleTileImageryProvider.fromUrl(`https://clouds.matteason.co.uk/images/${res}/clouds-alpha.png?t=${Math.floor(Date.now() / 10800000)}`, { credit: "Contains modified EUMETSAT data" });
+    const old = FXL.clouds, l = viewer.imageryLayers.addImageryProvider(prov); l.wmFx = 1; l.brightness = 1.1; FXL.clouds = l;
+    if (old) viewer.imageryLayers.remove(old);
+    fxLayersTop(); fxFade();
+  } catch {}
+}
+// Yükseklikle sönme: 3500 km üstü tam, 900 km altı kapalı (yakın görünüm her zaman net uydu görüntüsü)
+let fxAlphaLast = -1;
+function fxFade() {
+  const h = viewer.camera.positionCartographic.height, a = Math.max(0, Math.min(1, (h - 900000) / 2600000));
+  if (a === fxAlphaLast || (a > 0 && a < 1 && Math.abs(a - fxAlphaLast) < 0.02)) return; fxAlphaLast = a;
+  if (FXL.clouds) { FXL.clouds.alpha = 0.92 * a; FXL.clouds.show = a > 0; }
+  if (FXL.night) { FXL.night.alpha = a; FXL.night.show = a > 0; }
+  scene.requestRender();
+}
+viewer.camera.changed.addEventListener(fxFade);
+addNight(); setTimeout(addClouds, 1500); setInterval(addClouds, 3 * 3600 * 1000);
+/* Açılıştan haritaya: logo küresi gerçek dünyaya dönüşür */
+function matchGlobeToLogo() {
+  // Logo küresinin ekrandaki yarıçapı kadar görünecek mesafeye kamerayı koy (ekranın tam ortasında)
+  const cvW = $("spCanvas").getBoundingClientRect().width, rPx = cvW * 0.44 * 0.95;
+  const Hs = scene.canvas.clientHeight || innerHeight, fovy = viewer.camera.frustum.fovy || Math.PI / 3;
+  const th = Math.atan((rPx / (Hs / 2)) * Math.tan(fovy / 2)), d = 6378137 / Math.sin(th);
+  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(20, 22, d - 6378137) });
+}
+matchGlobeToLogo();
+let spinUntil = 0;
+/* Boşta dönüş: dokunulmadığında dünya yavaşça döner; kart açıkken, yaklaşmada ya da yakın görünümde durur */
+let idleSpinFrom = Infinity, lastSpinT = 0, spinListT = 0;
+const IDLE_MS = 6000, SPIN_RAD_S = PROFILE === "desktop" ? 0.045 : PROFILE === "tablet" ? 0.035 : 0;   // [2.3] telefonda kapalı (sürekli çizim = ısınma)
+const userTouched = () => { idleSpinFrom = performance.now() + IDLE_MS; };
+["pointerdown", "wheel", "touchstart"].forEach((ev) => scene.canvas.addEventListener(ev, userTouched, { passive: true }));
+scene.preRender.addEventListener(() => {
+  const now = performance.now(), dt = Math.min(0.05, (now - (lastSpinT || now)) / 1000); lastSpinT = now;
+  if (!SPIN_RAD_S || now < idleSpinFrom || !$("card").hidden || document.body.classList.contains("engaged") || $("splash")) return;
+  if (viewer.camera.positionCartographic.height < 4000000) return;
+  viewer.camera.rotate(Cesium.Cartesian3.UNIT_Z, -SPIN_RAD_S * dt);
+  scene.requestRender();
+  if (now - spinListT > 5000) { spinListT = now; computeVis(false); }   // [2.3] dönüşte liste yeniden kurulmaz (liste tüm dünyayı gösteriyor)   // yan liste dönen dünyayı takip etsin
+});
+scene.preRender.addEventListener(() => { if (performance.now() < spinUntil) { viewer.camera.rotate(Cesium.Cartesian3.UNIT_Z, -0.0032); scene.requestRender(); } });
+setTimeout(() => { const b = $("spOpen"); if (b) { b.hidden = false; b.focus({ preventScroll: true }); } }, window.SPLASH_MS || 3600);
+$("spOpen").addEventListener("click", () => {
+  const sp = $("splash"); if (!sp || sp.classList.contains("morph")) return;
+  const cv = $("spCanvas").getBoundingClientRect();
+  sp.style.setProperty("--dy", (innerHeight / 2 - (cv.top + cv.height / 2)) + "px");
+  sp.classList.add("morph");                                   // 1) hizala
+  document.body.classList.remove("splashing");
+  setTimeout(() => window.startFeeds && window.startFeeds(), 3400);  // [2.3] veri çekme, geçiş animasyonu bittikten hemen sonra
+  matchGlobeToLogo();
+  spinUntil = performance.now() + 6000;                         // dünya, logo gibi dönmeye başlar
+  setTimeout(() => {
+    sp.classList.add("reveal");                                 // 2) logo erir, dünya görünür
+    setTimeout(() => {                                          // 3) yaklaş
+      spinUntil = 0;
+      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(35, 30, 17000000), duration: 2.8, easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT });
+      setTimeout(() => { sp.remove(); document.body.classList.remove("splashing"); idleSpinFrom = performance.now() + 3500; }, 1200);
+    }, 1300);
+  }, 800);
+});
+
+const ds = new Cesium.CustomDataSource("olaylar");
+viewer.dataSources.add(ds);
+ds.clustering.enabled = false;   // hiçbir zaman kümeleme yok: yalnızca noktalar
+viewer.camera.percentageChanged = 0.02;
+const selMark = viewer.entities.add({
+  show: false, position: Cesium.Cartesian3.fromDegrees(0, 0),
+  point: { pixelSize: 30, color: Cesium.Color.TRANSPARENT, outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+});
+
+let tiles = null, terrainP = null, tilesOn = false;
+async function ensureTerrain() {
+  if (terrainP) return terrainP;
+  // Arazi verisi yalnızca zemin yüksekliğini ölçmek için kullanılır; dünya küresine BAĞLANMAZ (anahtar izin vermezse küre boş kalıyordu)
+  try { terrainP = await Cesium.createWorldTerrainAsync(); } catch { terrainP = null; }
+  return terrainP;
+}
+// Zemin yüksekliği (m): önce Cesium arazisi, olmazsa ücretsiz Open-Meteo yükseklik servisi, o da olmazsa 0
+async function groundAt(lat, lon) {
+  const tp = await ensureTerrain();
+  if (tp) { try { const [p] = await Cesium.sampleTerrainMostDetailed(tp, [Cesium.Cartographic.fromDegrees(lon, lat)]); if (isFinite(p.height)) return p.height; } catch {} }
+  try { const j = await getJSON(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lon.toFixed(5)}`, 6000); const e = j.elevation?.[0]; if (isFinite(e)) return e; } catch {}
+  return 0;
+}
+// 3D şehirler kendiliğinden: uzaktan dünya (uydu görüntüsü) her zaman görünür, yere yaklaşınca gerçek 3D binalara geçilir. Düğme yok.
+const NEAR_3D = 5000;              // [2.3] 30 km → 5 km: 3D binalar yalnızca gerçekten yakında (ZOOM IN 420–1400 m'ye iner)
+let tilesP = null, tilesReady = false;
+function loadTiles() {
+  if (tilesP) return tilesP;
+  tilesP = (async () => {
+    try {
+      tiles = await Cesium.createGooglePhotorealistic3DTileset(undefined, { showCreditsOnScreen: true, maximumScreenSpaceError: 12, cacheBytes: 384 * 1024 * 1024,
+        dynamicScreenSpaceError: true, foveatedScreenSpaceError: true, cullRequestsWhileMoving: true, cullRequestsWhileMovingMultiplier: 60,
+        skipLevelOfDetail: true, preferLeaves: true, progressiveResolutionHeightFraction: 0.5 });
+      tiles.customShader = glowShader; tiles.show = false;
+      tiles.allTilesLoaded.addEventListener(() => { if (tiles.show) { nearCovered = true; sync3D(); } });   // binalar yüklendi: küre altına çekilir
+      scene.primitives.add(tiles);
+    } catch { tiles = null; }
+    sync3D(); return tiles;
+  })();
+  return tilesP;
+}
+// Dünya küresi HER ZAMAN çizilir. Yalnızca çok yakında (30 km altı) ve 3D binalar ekranı tamamen doldurunca küre binaların altına çekilir.
+var nearCovered = false;   // [2.3] disengage'den erişilebilir
+function sync3D() {
+  if (!tilesP && viewer.camera.positionCartographic.height < NEAR_3D) loadTiles();
+  const near = !!tiles && viewer.camera.positionCartographic.height < NEAR_3D;
+  if (!near) nearCovered = false;
+  if (tiles) tiles.show = near;
+  const globeOn = !(near && nearCovered);
+  if (scene.globe.show !== globeOn || tilesOn !== near) { scene.globe.show = globeOn; tilesOn = near; scene.requestRender(); }
+}
+async function set3D() { await loadTiles(); sync3D(); return !!tiles; }
+viewer.camera.changed.addEventListener(sync3D);
+viewer.camera.moveEnd.addEventListener(sync3D);
+scene.globe.show = true;
+// Kamera yere çok yaklaşınca (binalar varken küre gizliyken) yerin altına girmesin
+let groundRef = 0;
+scene.preRender.addEventListener(() => {
+  if (!tilesOn) return;
+  const c = viewer.camera.positionCartographic;
+  if (c.height < groundRef + 25) { viewer.camera.setView({ destination: Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, groundRef + 25), orientation: { heading: viewer.camera.heading, pitch: Math.min(viewer.camera.pitch, -0.15), roll: 0 } }); }
+});
+// Tanı: üst bardaki logoya 3 kez dokununca dünya durumunu gösterir
+(() => { let n = 0, t = 0; $("bLogo").addEventListener("click", () => { const now = Date.now(); n = now - t < 600 ? n + 1 : 1; t = now;
+  if (n >= 3) { n = 0; const c = viewer.camera.positionCartographic, l = viewer.imageryLayers;
+    toast(`globe:${scene.globe.show} tiles:${!!tiles && tiles.show} h:${Math.round(c.height)}m pitch:${Cesium.Math.toDegrees(viewer.camera.pitch).toFixed(0)} layers:${l.length} ready:${l.length ? l.get(0).ready : "-"} tilesLoaded:${scene.globe.tilesLoaded}`, 12000); } }); })();
+
+/* ---------- Olaylar ---------- */
+function sizeOf(ev) { if (ev.count) return Math.min(13, 7 + Math.log2(ev.count + 1) * 0.8); return 7; }
+/* ---------- Veri bütünlüğü ---------- */
+const integrityWarn = (ev, why) => console.warn("Veri bütünlüğü hatası engellendi:", ev.id, ev.title, why ? "(" + why + ")" : "");
+const SIM_STOP = new Set("the a an and or but of in on at to for from with by as is are was were be been has have had its it this that these those after before over under into about amid says said say will would could new more than also just not no".split(" "));
+const simTokens = (t) => new Set(norm(String(t || "")).replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((w) => w.length > 3 && !SIM_STOP.has(w)).map((w) => w.slice(0, 5)));
+// Başlık kelimelerinin içerikte bulunma oranı (kök: ilk 5 harf). İçerik çok kısaysa karar verilmez.
+function titleContentSimilarity(title, content) {
+  const a = simTokens(title), b = simTokens(content);
+  if (a.size < 3 || b.size < 6) return 1;
+  let hit = 0; for (const w of a) if (b.has(w)) hit++;
+  return hit / a.size;
+}
+function isTitleContentMismatch(ev, content) {
+  const c = content ?? (ev.description || (ev.lead || []).join(" "));
+  return titleContentSimilarity(ev.title, c) < 0.4;
+}
+// 2.3: geçersiz koordinat (Null Island, sınır dışı değerler, ana ülkenin çok uzağı)
+const BIG = new Set(["Rusya", "ABD", "Kanada", "Çin", "Brezilya", "Avustralya", "Hindistan", "Kazakistan", "Arjantin", "Cezayir", "Kongo DC", "Suudi Arabistan", "Meksika", "Endonezya", "Sudan", "Libya", "İran", "Moğolistan", "Peru", "Çad", "Nijer", "Mali", "Etiyopya", "Güney Afrika", "Kolombiya", "Bolivya"]);
+const HUGE = { ABD: 7200, Rusya: 5800, Kanada: 4200, "Çin": 3600, Brezilya: 3600, Avustralya: 3600, Endonezya: 3600, Fransa: 2000 };   // Alaska/Hawaii, Sibirya, denizaşırı
+const countryRadius = (c) => HUGE[c.ad] || (BIG.has(c.ad) ? 2600 : 950);
+function validCoord(pt, ev) {
+  if (!isFinite(pt.lat) || !isFinite(pt.lon) || Math.abs(pt.lat) > 90 || Math.abs(pt.lon) > 180) return false;
+  if (Math.abs(pt.lat) < 0.5 && Math.abs(pt.lon) < 0.5) return false;                        // Null Island
+  const mc = ev?.g ? countryOfQuick(ev.g) : null;
+  if (mc && km(pt, mc) > countryRadius(mc)) return false;                                     // ör. Türkiye haberi Afrika'nın ortasında
+  return true;
+}
+/* Yalnızca SON 24 SAAT: zamanı bilinmeyen ya da 24 saatten eski hiçbir olay haritaya ve listeye girmez */
+const MAX_AGE = 24 * 3600e3;
+const isRecent24 = (ev) => !!ev.time && Date.now() - ev.time <= MAX_AGE && ev.time <= Date.now() + 3600e3;
+function purgeOld() {
+  let gone = 0;
+  ds.entities.suspendEvents();
+  try {
+    for (const [id, ev] of S.events) if (!isRecent24(ev)) {
+      dropFx(ev); S.events.delete(id); const e = S.ents.get(id); if (e) ds.entities.remove(e); S.ents.delete(id); gone++;
+    }
+  } finally { ds.entities.resumeEvents(); }
+  if (gone) { if (S.sel && !S.events.has(S.sel)) { S.sel = null; clearLinks(); placeCard(); } applyFilter(); }
+}
+/* Haberdeki kişi ya da kurum → o kişinin/kurumun binası (metinde açıkça başka bir olay yeri yoksa) */
+const ANCHORS = [
+  [/\b(trump|white house|beyaz saray|vance|leavitt)\b/i, "ABD", "White House, Washington", 38.8977, -77.0365],
+  [/\b(pentagon|hegseth|department of (?:defense|war))\b/i, "ABD", "The Pentagon, Arlington", 38.8719, -77.0563],
+  [/\b(rubio|state department|secretary of state)\b/i, "ABD", "U.S. Department of State, Washington", 38.8946, -77.0484],
+  [/\b(capitol hill|u\.?s\.? congress|u\.?s\.? senate|speaker johnson)\b/i, "ABD", "U.S. Capitol, Washington", 38.8899, -77.0091],
+  [/\b(federal reserve|the fed|powell)\b/i, "ABD", "Federal Reserve (Eccles Building), Washington", 38.8928, -77.0451],
+  [/\b(erdo[gğ]an|tayyip|külliye|presidential complex)\b/i, "Türkiye", "Presidential Complex (Külliye), Ankara", 39.9310, 32.7990],
+  [/\b(tbmm|grand national assembly|türkiye büyük millet meclisi)\b/i, "Türkiye", "Grand National Assembly, Ankara", 39.9116, 32.8516],
+  [/\b(putin|kremlin|peskov)\b/i, "Rusya", "Kremlin, Moscow", 55.7520, 37.6175],
+  [/\b(lavrov|zakharova|russian foreign ministry)\b/i, "Rusya", "Russian Foreign Ministry, Moscow", 55.7466, 37.5842],
+  [/\b(zelensk[yi]+y?|yermak|bankova)\b/i, "Ukrayna", "Office of the President of Ukraine, Kyiv", 50.4458, 30.5300],
+  [/\b(verkhovna rada|ukrainian parliament)\b/i, "Ukrayna", "Verkhovna Rada, Kyiv", 50.4473, 30.5373],
+  [/\b(macron|[ée]lys[ée]e)\b/i, "Fransa", "Élysée Palace, Paris", 48.8704, 2.3167],
+  [/\b(starmer|downing street|number 10)\b/i, "İngiltere", "10 Downing Street, London", 51.5034, -0.1276],
+  [/\b(netanyahu|israeli prime minister)\b/i, "İsrail", "Prime Minister's Office, Jerusalem", 31.7783, 35.2049],
+  [/\b(knesset)\b/i, "İsrail", "Knesset, Jerusalem", 31.7767, 35.2054],
+  [/\b(xi jinping|zhongnanhai)\b/i, "Çin", "Zhongnanhai, Beijing", 39.9130, 116.3830],
+  [/\b(merz|german chancellor|bundeskanzler)\b/i, "Almanya", "Federal Chancellery, Berlin", 52.5202, 13.3693],
+  [/\b(bundestag)\b/i, "Almanya", "Reichstag (Bundestag), Berlin", 52.5186, 13.3762],
+  [/\b(meloni|palazzo chigi)\b/i, "İtalya", "Palazzo Chigi, Rome", 41.9010, 12.4797],
+  [/\b(pope|vatican|holy see)\b/i, "İtalya", "Vatican City, Rome", 41.9022, 12.4539],
+  [/\b(modi|indian prime minister)\b/i, "Hindistan", "Prime Minister's Office (South Block), New Delhi", 28.6143, 77.2056],
+  [/\b(lula|planalto)\b/i, "Brezilya", "Palácio do Planalto, Brasília", -15.7990, -47.8604],
+  [/\b(milei|casa rosada)\b/i, "Arjantin", "Casa Rosada, Buenos Aires", -34.6081, -58.3703],
+  [/\b(sheinbaum)\b/i, "Meksika", "National Palace, Mexico City", 19.4326, -99.1311],
+  [/\b(carney|canadian prime minister)\b/i, "Kanada", "Parliament Hill, Ottawa", 45.4236, -75.7009],
+  [/\b(albanese|australian prime minister)\b/i, "Avustralya", "Parliament House, Canberra", -35.3081, 149.1245],
+  [/\b(takaichi|ishiba|japanese prime minister|kantei)\b/i, "Japonya", "Prime Minister's Office (Kantei), Tokyo", 35.6733, 139.7428],
+  [/\b(lee jae[- ]myung|south korean president)\b/i, "Güney Kore", "Presidential Office, Seoul", 37.5320, 126.9780],
+  [/\b(kim jong[- ]un)\b/i, "Kuzey Kore", "Pyongyang (central government)", 39.0290, 125.7530],
+  [/\b(pezeshkian|iranian president)\b/i, "İran", "Presidential Office, Tehran", 35.6880, 51.4120],
+  [/\b(khamenei|supreme leader)\b/i, "İran", "Office of the Supreme Leader, Tehran", 35.6930, 51.4100],
+  [/\b(bin salman|saudi crown prince)\b/i, "Suudi Arabistan", "Al-Yamamah Palace, Riyadh", 24.6800, 46.6300],
+  [/\b(al-sharaa|sharaa|syrian president)\b/i, "Suriye", "People's Palace, Damascus", 33.5170, 36.2460],
+  [/\b(lukashenko)\b/i, "Belarus", "Palace of Independence, Minsk", 53.9300, 27.5220],
+  [/\b(aliyev)\b/i, "Azerbaycan", "Presidential Administration, Baku", 40.3790, 49.8380],
+  [/\b(pashinyan)\b/i, "Ermenistan", "Government House, Yerevan", 40.1790, 44.5130],
+  [/\b(orb[aá]n)\b/i, "Macaristan", "Carmelite Monastery (PM's Office), Budapest", 47.4980, 19.0370],
+  [/\b(sisi|egyptian president)\b/i, "Mısır", "Ittihadiya Palace, Cairo", 30.0910, 31.3220],
+  [/\b(tinubu)\b/i, "Nijerya", "Aso Rock Presidential Villa, Abuja", 9.0650, 7.5100],
+  [/\b(ramaphosa)\b/i, "Güney Afrika", "Union Buildings, Pretoria", -25.7400, 28.2120],
+  [/\b(shehbaz|pakistani prime minister)\b/i, "Pakistan", "Prime Minister's House, Islamabad", 33.7290, 73.0980],
+  [/\b(prabowo)\b/i, "Endonezya", "Merdeka Palace, Jakarta", -6.1700, 106.8240],
+  [/\b(marcos|malaca[ñn]ang)\b/i, "Filipinler", "Malacañang Palace, Manila", 14.5940, 120.9940],
+  [/\b(nato|rutte)\b/i, "Belçika", "NATO Headquarters, Brussels", 50.8790, 4.4260],
+  [/\b(von der leyen|european commission)\b/i, "Belçika", "Berlaymont (European Commission), Brussels", 50.8434, 4.3826],
+  [/\b(european parliament)\b/i, "Belçika", "European Parliament, Brussels", 50.8384, 4.3756],
+  [/\b(guterres|security council|united nations|u\.n\.)\b/i, "ABD", "United Nations Headquarters, New York", 40.7489, -73.9680],
+  [/\b(iaea|grossi)\b/i, null, "IAEA, Vienna International Centre", 48.2346, 16.4163],
+  [/\b(WHO|World Health Organization|Tedros)\b/, null, "World Health Organization, Geneva", 46.2329, 6.1340],
+  [/\b(international criminal court|icc)\b/i, null, "International Criminal Court, The Hague", 52.1066, 4.3166],
+  [/\b(international court of justice|icj)\b/i, null, "Peace Palace (ICJ), The Hague", 52.0865, 4.2955],
+  [/\b(european central bank|ecb|lagarde)\b/i, null, "European Central Bank, Frankfurt", 50.1096, 8.7034],
+  [/\b(imf|international monetary fund|georgieva)\b/i, null, "IMF Headquarters, Washington", 38.8990, -77.0440],
+];
+function anchorOf(text) {
+  for (const [re, ctry, name, lat, lon] of ANCHORS) if (re.test(text)) return { ctry, name, lat, lon };
+  return null;
+}
+// Metinde açıkça bir olay yeri var mı? ("in Kharkiv", "Gazze'de", "strike on Odesa")
+function hasStrongPlace(text) {
+  const c = scorePlaces(text).filter((x) => !x.why.includes("meto"))[0];
+  return !!(c && !c.g.country && (c.why.includes("loc") || c.why.includes("hit")));
+}
+function applyAnchor(ev) {
+  if (ev.prec === "exact" || ev.prec === "inst" || ev.cat === "afet") return false;
+  const text = ev.title + " " + (ev.description || "");
+  if (hasStrongPlace(ev.title)) return false;
+  const a = anchorOf(ev.title) || (ev.cat !== "catisma" ? anchorOf(text) : null); if (!a) return false;
+  if (ev.cat === "catisma" && !(LEADER.test(ev.title) && STATEMENT.test(ev.title))) return false;   // saldırı haberi sahada olur
+  const g = a.ctry ? GAZ.find((x) => x.country && x.ad === a.ctry) : nearestCountry(a);
+  Object.assign(ev, { g, lat: a.lat, lon: a.lon, prec: "exact", spot: a.name, why: [["anchor", a.name]] });
+  return true;
+}
+function addOne(src, ev) {
+  if (S.events.has(ev.id) || !CATS[ev.cat]) return false;
+  if (!isRecent24(ev)) return false;
+  applyAnchor(ev);
+  if (!validCoord(ev, ev)) { integrityWarn(ev, "geçersiz koordinat"); return false; }
+  if (ev.description && isTitleContentMismatch(ev)) { integrityWarn(ev, "başlık ve içerik uyuşmuyor"); return false; }
+  ev.src = src;
+  S.events.set(ev.id, ev);
+  const ref = REF.get(ev.id);
+  if (ref && (!validCoord(ref, ev) || isEventTitle(ref.spot))) { REF.delete(ev.id); }
+  else if (ref) Object.assign(ev, ref);
+  if (!ref && ev.url && DEEPC[ev.url]) { const d = DEEPC[ev.url]; if (d.r && validCoord(d.r, ev)) Object.assign(ev, d.r); if (d.cat && CATS[d.cat]) ev.cat = d.cat; if (d.lead) ev.lead = d.lead; ev.deep = true; }
+  if (!(ev.prec === "exact" || ev.prec === "inst")) applyAnchor(ev);
+  if ((S.fresh.get(ev.id) || 0) > Date.now()) ev.live = true;
+  ev.aktif = isActive(ev);
+  const col = Cesium.Color.fromCssColorString(CATS[ev.cat]);
+  const e = ds.entities.add({
+    id: ev.id, position: Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 50),
+    point: { pixelSize: sizeOf(ev) - (ev.aktif ? 0 : 2), color: col.withAlpha(ev.aktif ? 0.95 : 0.35), scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 2.2e7, 0.6),
+      outlineColor: ev.live ? Cesium.Color.WHITE : Cesium.Color.fromCssColorString("#07090d"), outlineWidth: ev.live ? 2 : 1.5,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY },
+  });
+  e.ev = ev; S.ents.set(ev.id, e); addHalo(ev); syncRing(ev); return true;
+}
+function isolateId(src, ev) {
+  // Aynı kimlikle gelen iki olay yalnızca URL'leri birebir aynıysa aynı olaydır; değilse ayrı tutulur, başlık ezilmez.
+  const cur = S.events.get(ev.id);
+  if (!cur || cur.src === src) return;
+  if (cur.url && ev.url && cur.url === ev.url) return;
+  ev.id = ev.id + "#" + hash(src + "|" + (ev.url || "") + "|" + ev.title);
+}
+function replaceSource(src, list) {
+  // Yalnızca değişeni işle: kaybolan olayları sil, yeni gelenleri ekle, değişmeyenlere dokunma.
+  for (const ev of list) isolateId(src, ev);
+  const ids = new Set(list.map((e) => e.id)), added = [];
+  let changed = false;
+  ds.entities.suspendEvents();
+  try {
+    for (const [id, ev] of S.events) if (ev.src === src && !ids.has(id)) {
+      dropFx(ev); S.events.delete(id); const e = S.ents.get(id); if (e) ds.entities.remove(e); S.ents.delete(id); changed = true;
+    }
+    for (const ev of list) {
+      if (S.events.has(ev.id)) continue;
+      const old = TXKEEP.get(ev.id); if (old) ev.tx = old;
+      if (addOne(src, ev)) { added.push(ev); changed = true; }
+    }
+  } finally { ds.entities.resumeEvents(); }
+  if (!changed) return;
+  scheduleApply();
+  added.filter((e) => e.prec !== "exact").forEach((e) => enqueueGeo(e));
+  added.forEach((e) => enqueueDeep(e));
+}
+const TXKEEP = new Map();
+// [2.4] Kaynak güncellemeleri toplanır: birkaç kaynak art arda gelse de liste/filtre tek seferde, tarayıcı boştayken yenilenir
+let applyT = 0;
+function scheduleApply() {
+  if (applyT) return;
+  applyT = setTimeout(() => { const go = () => { applyT = 0; applyFilter(); }; window.requestIdleCallback ? requestIdleCallback(go, { timeout: 1200 }) : go(); }, 450);
+}
+const yieldUI = () => new Promise((r) => (window.scheduler?.yield ? scheduler.yield().then(r) : setTimeout(r, 0)));
+
+
+/* ---------- Canlı efektler ----------
+   1) Dünya görünümü: SON 10 DAKİKADA gelen olayların üstünde yayılıp sönen kırmızı halkalar.
+   2) Yakın görünüm: ekrandaki olayların mahallesi (sokaklar ve binalar) yavaşça kızarıp söner. */
+const ringImg = (() => {
+  const c = document.createElement("canvas"); c.width = c.height = 160; const g = c.getContext("2d");
+  const grd = g.createRadialGradient(80, 80, 40, 80, 80, 76);
+  grd.addColorStop(0, "rgba(255,255,255,0)"); grd.addColorStop(.82, "rgba(255,255,255,.55)"); grd.addColorStop(.92, "rgba(255,255,255,1)"); grd.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grd; g.beginPath(); g.arc(80, 80, 78, 0, Math.PI * 2); g.fill(); return c.toDataURL();
+})();
+const haloImg = (() => {
+  const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d");
+  const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, "rgba(255,255,255,.95)"); grd.addColorStop(.25, "rgba(255,255,255,.55)"); grd.addColorStop(.6, "rgba(255,255,255,.15)"); grd.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128); return c.toDataURL();
+})();
+const T0 = performance.now();
+const PERIOD = 5.2;   // nefes döngüsü (sn): yakın görünüm, uzak görünüm aynı ritim
+const breathNow = () => 0.5 - 0.5 * Math.cos(2 * Math.PI * ((performance.now() - T0) / 1000) / PERIOD);
+const CATC = Object.fromEntries(Object.entries(CATS).map(([k, c]) => [k, Cesium.Color.fromCssColorString(c)]));
+const HALO = {};
+for (const k in CATC) {
+  // [2.4] Tüm cihazlarda sabit parıltı: yüzlerce olayın her karede yeniden renklenmesi ve haritanın sürekli çizilmesi (tablet donması) kalktı
+  HALO[k] = new Cesium.ConstantProperty(CATC[k].withAlpha(0.6));
+  HALO[k + "_off"] = new Cesium.ConstantProperty(CATC[k].withAlpha(0.2));
+}
+const phase = (off, per) => ((((performance.now() - T0) / 1000 + off) % per) + per) % per / per;
+// [2.3] Eskiden her olay parıltısı fxCount'u artırıyor ve requestRenderMode'u kapatıyordu → olay varsa harita SÜREKLİ (her karede) çiziliyordu.
+// Şimdi: istek-üzerine çizim hep açık. Animasyonlar (nefes, halka, bina ışığı) için ayrı, düşük frekanslı tik; sayaç yerine gerçek durumdan hesaplanır.
+let fxCount = 0, fxTimer = 0;
+const FX_MS = PROFILE === "phone" ? 100 : 66;                   // telefonda 10, diğerlerinde 15 kare/sn animasyon yeter
+function fxNeeded() {
+  if (document.hidden) return false;
+  const h = viewer.camera.positionCartographic.height;
+  return glowActive > 0 || (h < 9e6 && RINGS > 0);   // [2.4] yalnızca yeni olay halkası ya da bina ışığı varken
+}
+let RINGS = 0;
+const ringN = () => RINGS;   // [2.4] sayaç: her olayda tüm listeyi saymak (O(n²)) yok
+const syncRender = () => {
+  scene.requestRenderMode = true;
+  const want = fxNeeded();
+  if (want && !fxTimer) fxTimer = setInterval(() => { if (!fxNeeded()) { clearInterval(fxTimer); fxTimer = 0; return; } scene.requestRender(); }, FX_MS);
+  else if (!want && fxTimer) { clearInterval(fxTimer); fxTimer = 0; }
+  scene.requestRender();
+};
+document.addEventListener("visibilitychange", syncRender);
+const RECENT = 10 * 60000;
+function recentSince(ev) {
+  const fr = S.fresh.get(ev.id); const seenAt = fr ? fr - 15 * 60000 : 0;   // canlı akışta ilk görüldüğü an
+  const t = !ev.day && ev.time ? ev.time : 0;
+  return Math.max(seenAt, t);
+}
+const isRecent = (ev) => Date.now() - recentSince(ev) < RECENT;
+
+/* 1) dünya görünümü halkaları */
+const RING_MAX = PROFILE === "phone" ? 6 : 12;                 // [2.3] yüzlerce yerine en yeni 6/12 olay halka atar
+function syncRing(ev) {
+  const want = isRecent(ev) && (ev.ring || ringN() < RING_MAX);
+  if (want && !ev.ring) {
+    const off = (hash(ev.id) % 1000) / 1000 * 3.2, pos = Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 50);
+    const ddc = new Cesium.DistanceDisplayCondition(600000, Number.MAX_VALUE);
+    ev.ring = [0, 0.5].map((k) => viewer.entities.add({ position: pos, billboard: {
+      image: ringImg, disableDepthTestDistance: Number.POSITIVE_INFINITY, distanceDisplayCondition: ddc,
+      scale: new Cesium.CallbackProperty(() => 0.12 + phase(off + k * 3.2, 3.2) * 0.8, false),
+      color: new Cesium.CallbackProperty(() => CATC[ev.cat].withAlpha(Math.pow(1 - phase(off + k * 3.2, 3.2), 1.8)), false) } }));
+    ev.ring.forEach((w) => (w.show = matches(ev)));
+    fxCount++; RINGS++; syncRender();
+  } else if (!want && ev.ring) dropRing(ev);
+}
+function dropRing(ev) { if (!ev.ring) return; ev.ring.forEach((w) => viewer.entities.remove(w)); ev.ring = null; fxCount--; RINGS--; syncRender(); }
+setInterval(() => { for (const ev of S.events.values()) if (ev.ring || isRecent(ev)) syncRing(ev); }, 20000);
+
+/* 1b) dünya görünümü: her olayın etrafında kendi renginde nefes alan yumuşak parıltı */
+function addHalo(ev) {
+  if (ev.halo) return;
+  ev.halo = viewer.entities.add({ position: Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 50), billboard: {
+    image: haloImg, width: 34, height: 34, color: HALO[ev.cat + (ev.aktif ? "" : "_off")],
+    disableDepthTestDistance: Number.POSITIVE_INFINITY, distanceDisplayCondition: new Cesium.DistanceDisplayCondition(60000, Number.MAX_VALUE),
+    scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 2.2e7, 0.55) } });
+  ev.halo.show = matches(ev);
+  fxCount++; syncRender();
+}
+function dropHalo(ev) { if (!ev.halo) return; viewer.entities.remove(ev.halo); ev.halo = null; fxCount--; syncRender(); }
+
+/* 2) yakın görünüm: mahalle kızarıp söner
+   Kırmızı ışık doğrudan 3D binaların ve sokakların kendi görüntüsüne, ekran kartında işlenir (CustomShader).
+   Kameranın baktığı bölgedeki en yakın 8 olay için yuva vardır; her yuva = konum (xyz) + yarıçap (w). */
+const GLOW_N = 8;
+const glowShader = new Cesium.CustomShader({
+  uniforms: Object.assign({ u_t: { type: Cesium.UniformType.FLOAT, value: 0 } },
+    Object.fromEntries([...Array(GLOW_N)].flatMap((_, i) => [[`u_c${i}`, { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(0, 0, 0, 0) }],
+                                                              [`u_k${i}`, { type: Cesium.UniformType.VEC3, value: new Cesium.Cartesian3(1, 0, 0) }]]))),
+  fragmentShaderText: `
+    // Bir yuvanın etkisi: yatay mesafeye göre net kenarlı alan; h = merkeze göre yükseklik (bina mı zemin mi)
+    void wmSlot(vec3 p, vec4 c, vec3 k, inout float g, inout vec3 col, inout float hb) {
+      if (c.w <= 0.0) return;
+      vec3 up = normalize(c.xyz), dv = p - c.xyz;
+      float h = dot(dv, up), d = length(dv - up * h);
+      float gi = 1.0 - smoothstep(c.w * 0.82, c.w, d);
+      if (gi > g) { g = gi; col = k; hb = h; }
+    }
+    void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+      vec3 p = fsInput.attributes.positionWC;
+      float g = 0.0, hb = 0.0; vec3 col = vec3(0.0);
+      ${[...Array(GLOW_N)].map((_, i) => `wmSlot(p, u_c${i}, u_k${i}, g, col, hb);`).join("\n      ")}
+      if (g <= 0.0) return;
+      float breath = 0.5 - 0.5 * cos(6.2831853 * u_t / ${PERIOD.toFixed(1)});
+      float bld = smoothstep(-16.0, -7.0, hb);                 // merkez zeminin 20 m üstünde: binalar tam, zemin hafif
+      float k = g * breath * mix(0.22, 0.92, bld);
+      float lum = dot(material.diffuse, vec3(0.3, 0.59, 0.11));
+      vec3 lit = col * (0.28 + lum * 1.55);                    // binanın dokusu korunur, rengi kategoriye döner
+      material.diffuse = mix(material.diffuse, lit, k);
+    }`,
+});
+let glowActive = 0;
+scene.preRender.addEventListener(() => { if (glowActive) glowShader.setUniform("u_t", (performance.now() - T0) / 1000); });
+function lookPoint() {
+  const c = scene.canvas, ray = viewer.camera.getPickRay(new Cesium.Cartesian2(c.clientWidth / 2, c.clientHeight / 2));
+  const hit = ray && Cesium.IntersectionTests.rayEllipsoid(ray, Cesium.Ellipsoid.WGS84);
+  if (!hit) return null;
+  const cg = Cesium.Cartographic.fromCartesian(Cesium.Ray.getPoint(ray, hit.start));
+  return { lat: Cesium.Math.toDegrees(cg.latitude), lon: Cesium.Math.toDegrees(cg.longitude) };
+}
+const groundH = new LRU(800);   // olay -> zemin yüksekliği (ışığın binalara oturması için)
+async function heightOf(ev) {
+  const k = ev.lat.toFixed(4) + "," + ev.lon.toFixed(4);
+  if (groundH.has(k)) return groundH.get(k);
+  const h = await groundAt(ev.lat, ev.lon);
+  groundH.set(k, h); return h;
+}
+let glowRun = 0;
+async function updateGlows() {
+  const run = ++glowRun;
+  const h = viewer.camera.positionCartographic.height, at = h < 90000 ? lookPoint() : null;
+  const pick = at ? [...S.events.values()].filter((e) => e.prec !== "country" && e.prec !== "region" && matches(e) && km(e, at) < 45)
+    .sort((a, b) => km(a, at) - km(b, at)).slice(0, GLOW_N) : [];
+  const vals = [];
+  for (const e of pick) {
+    const gh = await heightOf(e); if (run !== glowRun) return;
+    const c = Cesium.Cartesian3.fromDegrees(e.lon, e.lat, gh + 20);
+    vals.push([new Cesium.Cartesian4(c.x, c.y, c.z, (e.prec === "exact" || e.prec === "inst") ? 260 : 700), new Cesium.Cartesian3(CATC[e.cat].red, CATC[e.cat].green, CATC[e.cat].blue)]);
+  }
+  for (let i = 0; i < GLOW_N; i++) {
+    glowShader.setUniform(`u_c${i}`, vals[i]?.[0] || new Cesium.Cartesian4(0, 0, 0, 0));
+    if (vals[i]) glowShader.setUniform(`u_k${i}`, vals[i][1]);
+  }
+  glowActive = vals.length; syncRender();                       // [2.3] sayaç yerine gerçek durum
+  scene.requestRender();
+}
+viewer.camera.moveEnd.addEventListener(updateGlows);
+viewer.camera.moveEnd.addEventListener(syncRender);           // [2.3] yükseklik değişince animasyon tikinin gerekip gerekmediği yeniden hesaplanır
+function dropFx(ev) { dropRing(ev); dropHalo(ev); }
+function refreshFx(ev) { if (ev.ring) { dropRing(ev); syncRing(ev); } if (ev.halo) { dropHalo(ev); addHalo(ev); } updateGlows(); }
+
+/* ---------- Hassas konum: Wikipedia koordinatları + OpenStreetMap (Photon) ---------- */
+const REF = new Map(), DONE = new Set();
+const PH = (() => { try { return JSON.parse(localStorage.getItem("wm-geo") || "{}"); } catch { return {}; } })();
+// [2.4] Depolama yazmaları toplanır: her sonuçta değil, ~20 sn'de bir ve tarayıcı boştayken (büyük JSON yazımı ana iş parçacığını kilitliyordu)
+const LAZY = new Map();
+function lazySave(key, fn) {
+  if (LAZY.has(key)) return; 
+  const go = () => { LAZY.delete(key); fn(); };
+  LAZY.set(key, setTimeout(() => { (window.requestIdleCallback ? requestIdleCallback(go, { timeout: 4000 }) : go()); }, 20000));
+}
+addEventListener("pagehide", () => { for (const [k, t] of LAZY) clearTimeout(t); LAZY.clear(); try { localStorage.setItem("wm-geo", JSON.stringify(PH)); localStorage.setItem("wm-deep", JSON.stringify(DEEPC)); localStorage.setItem("wm-inst", JSON.stringify(INSTC)); } catch {} });
+const savePH = () => lazySave("ph", () => { try { const k = Object.keys(PH); if (k.length > 3000) for (const x of k.slice(0, 1000)) delete PH[x]; localStorage.setItem("wm-geo", JSON.stringify(PH)); } catch {} });
+const km = (a, b) => { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r;
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+function applyRef(ev, r) {
+  if (!validCoord(r, ev)) { integrityWarn(ev, "konum adayı ana ülkenin dışında"); return; }
+  if (r.spot && isEventTitle(r.spot) && !(r.why || []).some((w) => w && w[0] === "summit")) { integrityWarn(ev, "olay maddesi konum olarak kullanılamaz: " + r.spot); return; }
+  Object.assign(ev, r); REF.set(ev.id, r);
+  refreshFx(ev);
+  const e = S.ents.get(ev.id); if (e) e.position = Cesium.Cartesian3.fromDegrees(r.lon, r.lat, 50);
+  if (S.sel === ev.id) { selMark.position = Cesium.Cartesian3.fromDegrees(r.lon, r.lat, 50); renderCard(ev); showLinks(ev); }
+  scene.requestRender();
+  // [2.4] Yaklaşma bittikten sonra daha kesin yer bulunursa kamera oraya süzülür
+  if (hudEv === ev && document.body.classList.contains("arrived") && ev._flown && km(ev._flown, ev) > 0.15) { const run = mission; flySite(ev, 2.2, undefined, run).then(() => { if (run === mission) $("hudCoord").textContent = dms(ev.lat, ev.lon); }); }
+}
+// Wikipedia'da "olay" maddeleri (ör. "2024 Turkish Aerospace Industries headquarters attack") bir YER değildir:
+// geçmiş bir olayın koordinatı, bugünkü haberin konumu olarak asla kullanılmaz.
+const EVENT_TITLE = /\b(1[89]\d\d|20\d\d)\b|\b(attacks?|bombings?|shootings?|massacre|killings?|assassination|war|conflict|invasion|offensive|operation|siege|battle|campaign|insurgency|uprising|protests?|riots?|unrest|crisis|coup|elections?|referendum|earthquake|floods?|wildfires?|hurricane|cyclone|typhoon|explosion|disaster|incident|accident|crash|summit|conference|talks|relations|agreement|deal|treaty|memorandum|sanctions|trial|case|scandal|affair|timeline|list of|invasion of)\b/i;
+const isEventTitle = (t) => EVENT_TITLE.test(String(t || ""));
+const RANK = (t) => /landmark|building|airport|railwaystation|edu|waterbody|pass/.test(t) ? 6 : /event/.test(t) ? -2 : /city/.test(t) ? 4
+  : /adm3rd|adm2nd/.test(t) ? 3 : /adm1st|isle/.test(t) ? 2 : /country|continent|ocean|sea|globe/.test(t) ? -1 : 3;
+/* Düşünme kuralları:
+   (a) Ülke maddeleri (Turkey, Libya…) konum adayı olamaz; Wikipedia'da koordinatları başkenttir.
+   (b) Olay yeri, haberin ANA ülkesinin içinde olmalı. Aday, metinde geçen BAŞKA bir ülkeye daha yakınsa reddedilir. */
+const COUNTRIES = GAZ.filter((g) => g.country);
+const isCountryTitle = (t) => { const n = norm(t); return COUNTRIES.some((g) => norm(g.en) === n || norm(g.ad) === n || g.re.test(n) && n.split(/\s+/).length <= 3 && !/[–-]/.test(t)); };
+const nearestCountry = (pt) => { let b = null, d = Infinity; for (const g of COUNTRIES) { const k = km(pt, g); if (k < d) { d = k; b = g; } } return b; };
+function belongs(pt, ev) {
+  // Olayın ana ülkesi: eylemin GERÇEKLEŞTİĞİ yer (scorePlaces yapanı, konuyu ve metonimi zaten eler).
+  if (!ev.g) return true;
+  const main = countryOfQuick(ev.g);
+  if (!main) return true;
+  if (km(pt, main) > countryRadius(main)) return false;                       // ana ülkenin dışında
+  const near = nearestCountry(pt);
+  if (!near || near === main) return true;
+  const n = norm(ev.title + " " + (ev.ctx || "") + " " + (ev.description || ""));
+  return !near.re.test(n);          // metinde geçen BAŞKA bir ülkeye ait: bu, olayın yeri değil
+}
+async function refineWikiBatch(list) {
+  const all = [...new Set(list.flatMap((e) => [...(e.own || []), ...(e.ctxL || [])]))];
+  const info = new Map();
+  for (let i = 0; i < all.length; i += 45) {
+    const chunk = all.slice(i, i + 45);
+    try {
+      const j = await getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&redirects=1&prop=coordinates&coprop=type|dim&colimit=max&titles=" + encodeURIComponent(chunk.join("|")), 15000);
+      const alias = new Map();
+      for (const n of j.query?.normalized || []) alias.set(n.from, n.to);
+      for (const r of j.query?.redirects || []) alias.set(r.from, r.to);
+      for (const pg of j.query?.pages || []) if (pg.coordinates?.length) { const c = pg.coordinates[0]; info.set(pg.title, { lat: c.lat, lon: c.lon, type: c.type || "", title: pg.title }); }
+      for (const t of chunk) { let x = t, n = 0; while (alias.has(x) && n++ < 3) x = alias.get(x); if (info.has(x)) info.set(t, info.get(x)); }
+    } catch {}
+  }
+  for (const ev of list) {
+    const c = [...(ev.own || []).map((t, i) => ({ t, i, own: 1 })), ...(ev.ctxL || []).map((t, i) => ({ t, i, own: 0 }))]
+      .filter((x) => !isCountryTitle(x.t) && !isEventTitle(x.t))
+      .map((x) => ({ ...x, inf: info.get(x.t) })).filter((x) => x.inf && RANK(x.inf.type) >= 2 && belongs(x.inf, ev))
+      .filter((x) => !ev.g || !ev.g.country || km(x.inf, ev.g) < 2600)
+      .filter((x) => { const gz = GAZ.find((g) => !g.country && METO.has(g.ad) && norm(g.en) === norm(x.t)); if (!gz) return true;
+        const n = norm(ev.title), m = gz.re.exec(n); return !m || !isMetonym(n, m.index, m[0].length); });
+    c.sort((a, b) => (b.own - a.own) || (RANK(b.inf.type) - RANK(a.inf.type)) || (a.i - b.i));
+    const best = c[0]; if (!best) continue;
+    const r = { lat: best.inf.lat, lon: best.inf.lon, prec: RANK(best.inf.type) >= 6 ? "exact" : "city", spot: best.inf.title, why: [["wiki", best.inf.title]] };
+    Object.assign(ev, r); REF.set(ev.id, r);
+  }
+}
+const photonS = (q, near) => photon(q, near).catch(() => null);   // [2.4] tek bir hata tüm okumayı durdurmaz
+async function photon(q, near) {
+  const key = q + "|" + (near ? near.lat.toFixed(1) + "," + near.lon.toFixed(1) : "");
+  if (key in PH) return PH[key];
+  let url = "https://photon.komoot.io/api/?limit=1&lang=en&q=" + encodeURIComponent(q);
+  if (near) url += `&lat=${near.lat.toFixed(4)}&lon=${near.lon.toFixed(4)}`;
+  const j = await getJSON(url, 10000), f = j.features?.[0];
+  const r = f ? { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], type: f.properties.type, key: f.properties.osm_key,
+    name: f.properties.name, city: f.properties.city, country: f.properties.country } : null;
+  PH[key] = r; savePH(); return r;
+}
+const CAP = "\\p{Lu}[\\p{L}'’.-]+";
+function placePhrases(t) {
+  const out = []; let m;
+  const en = new RegExp(`\\b(?:in|at|near|outside|across|from|into|of)\\s+(?:the\\s+)?(${CAP}(?:\\s+(?:de|del|la|al|el|${CAP})){0,3})`, "gu");
+  while ((m = en.exec(t))) out.push(m[1]);
+  const tr = /(\p{Lu}[\p{L}]+(?:\s\p{Lu}[\p{L}]+)?)['’](?:de|da|te|ta|deki|daki|nde|nda|ndeki|ndaki|e|a|ye|ya|den|dan)\b/gu;
+  while ((m = tr.exec(t))) out.push(m[1]);
+  return [...new Set(out.map((p) => p.replace(/[.,;:’']+$/u, "")))].filter((p) => !GAZ.some((g) => g.country && g.re.test(norm(p)))).slice(0, 3);
+}
+const LM = new RegExp(`(?:(?:${CAP}|de|of|the)\\s+){0,3}(?<![\\p{L}-])(?:Hôtel de Ville|[Cc]ity [Hh]all|[Tt]own [Hh]all|Parliament|Palace|[Ee]mbassy|[Cc]onsulate|[Aa]irport|Stadium|Square|Cathedral|Mosque|University|Hospital|[Rr]efinery|Bridge|[Mm]inistry|[Cc]ourthouse|Prison|[Mm]arket(?:place)?|[Bb]azaa?r|[Ff]uel depot|[Dd]epot|[Rr]efugee camp|[Cc]amp|[Ss]chool|[Hh]ospital|[Cc]heckpoint|[Pp]ower (?:plant|station)|[Dd]am|[Pp]ort|[Aa]ir ?base|[Mm]ilitary base|[Bb]ase|[Vv]illage|[Ss]tation|Belediye(?:si)?|Meydanı|Havalimanı|Büyükelçiliği|Camii|Üniversitesi|Hastanesi|[Pp]azar(?:ı)?|[Kk]ampı|[Oo]kulu|[Kk]öyü)(?![\\p{L}-])(?:\\s+(?:of\\s+)?${CAP}){0,2}`, "u");
+// Ülke → başkent (GAZ'daki şehir adıyla)
+const CAPITAL = { "Türkiye": "Ankara", "Fransa": "Paris", "İngiltere": "Londra", "Almanya": "Berlin", "İtalya": "Roma", "İspanya": "Madrid",
+  "Portekiz": "Lizbon", "Belçika": "Brüksel", "Hollanda": "Amsterdam", "Yunanistan": "Atina", "Arnavutluk": "Tiran", "Sırbistan": "Belgrad",
+  "Macaristan": "Budapeşte", "Polonya": "Varşova", "Romanya": "Bükreş", "Norveç": "Oslo", "İsveç": "Stockholm", "Rusya": "Moskova", "Ukrayna": "Kiev",
+  "ABD": "Washington", "Çin": "Pekin", "Japonya": "Tokyo", "Güney Kore": "Seul", "Hindistan": "Yeni Delhi", "Pakistan": "İslamabad", "Afganistan": "Kabil",
+  "Bangladeş": "Dakka", "Nepal": "Katmandu", "Sri Lanka": "Kolombo", "Mısır": "Kahire", "Sudan": "Hartum", "Libya": "Trablus", "Kenya": "Nairobi",
+  "Nijerya": "Abuja", "Somali": "Mogadişu", "Venezuela": "Karakas", "Kolombiya": "Bogota", "Meksika": "Mexico City", "Arjantin": "Buenos Aires",
+  "Peru": "Lima", "Şili": "Santiago", "Ekvador": "Kito", "Bolivya": "La Paz", "Tayvan": "Taipei", "Filipinler": "Manila", "Endonezya": "Cakarta",
+  "Tayland": "Bangkok", "Yemen": "Sana", "Suudi Arabistan": "Riyad", "Katar": "Doha", "Gürcistan": "Tiflis", "Azerbaycan": "Bakü", "Ermenistan": "Erivan",
+  "İran": "Tahran", "Irak": "Bağdat", "Suriye": "Şam", "Lübnan": "Beyrut", "İsrail": "Kudüs" };
+// Ülkede birden fazla yönetim merkezi olan durumlar
+const SEATS = [
+  { c: "Libya", re: /(east(?:ern)?[- ](?:based|libya)|libya'?s east|benghazi|tobruk|haftar|bingazi)/i, city: "Bingazi" },
+  { c: "Yemen", re: /(houthi|husi|ansar allah)/i, city: "Sana" },
+  { c: "Yemen", re: /(aden|presidential leadership council)/i, city: "Aden" },
+  { c: "Sudan", re: /(rsf|rapid support|darfur)/i, city: "El Faşir" },
+];
+// Metindeki resmi yapı → OpenStreetMap'te aranacak ad
+const GOVQ = [
+  [/(government (?:buildings?|headquarters|offices?|seat)|prime minister'?s office|council of ministers|hükümet binas|başbakanlık)/i, "Prime Minister's Office"],
+  [/(presidential palace|presidency|president'?s office|cumhurbaşkanlığı)/i, "Presidential Palace"],
+  [/(parliament|house of representatives|national assembly|senate|lawmakers|legislat|congress building|capitol|meclis)/i, "Parliament"],
+  [/(city hall|town hall|belediye binas)/i, "City Hall"],
+  [/(ministry of [a-z]+|bakanlığı)/i, "Ministry"],
+];
+// Zirve ve konferanslar başkentte değil, yapıldığı şehirde olur (COP31 → Antalya)
+const SUMMIT_RE = /\b(COP ?\d{2}|G ?20|G ?7|NATO summit|BRICS summit|SCO summit|ASEAN summit|EU summit|European Council|UN General Assembly|World Economic Forum|Davos|Munich Security Conference|climate (?:summit|conference))\b/i;
+async function summitPlace(text) {
+  const m = SUMMIT_RE.exec(text); if (!m) return null;
+  const key = "summit|" + m[1].toLowerCase().replace(/\s+/g, "") + "|" + new Date().getFullYear();
+  if (key in PH) return PH[key];
+  let res = null;
+  try {
+    const titles = await wikiSearch(`${m[1]} ${new Date().getFullYear()}`);
+    if (titles.length) {
+      const c = await getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&prop=coordinates&colimit=max&titles=" + encodeURIComponent(titles.join("|")), 10000);
+      const pg = (c.query?.pages || []).find((x) => x.coordinates?.length && !isCountryTitle(x.title));
+      if (pg) res = { lat: pg.coordinates[0].lat, lon: pg.coordinates[0].lon, name: pg.title, tag: m[1] };
+    }
+  } catch {}
+  PH[key] = res; savePH(); return res;
+}
+// [2.4] Aynı haber için süren arama paylaşılır: ZOOM IN, arka planda başlamış okumayı bekler (eskiden boş dönüp kaba konuma uçuyordu)
+function refineOne(ev) { if (ev.refP) return ev.refP; if (DONE.has(ev.id) || ev.prec === "exact") return Promise.resolve(); return (ev.refP = refineOne0(ev)); }
+async function refineOne0(ev) {
+  if (DONE.has(ev.id) || ev.prec === "exact") return;
+  DONE.add(ev.id);
+  const text = ev.title, places = placePhrases(scrub(text));
+  // 0) Zirve / konferans
+  const sm = await summitPlace(text + " " + (ev.ctx || ""));
+  if (sm) { applyRef(ev, { lat: sm.lat, lon: sm.lon, prec: "city", spot: sm.name, why: [["summit", sm.tag]] }); return; }
+  let r = null, seatUsed = false, city = ev.prec === "city" ? { lat: ev.lat, lon: ev.lon, name: ev.spot || ev.g?.en } : null;
+  // 1) yalnızca ülke biliniyorsa: metindeki yer adını bul
+  if (!city) {
+    for (const p of places) {
+      const gz = GAZ.find((g) => !g.country && g.re.test(norm(p)));
+      const hit = gz ? { lat: gz.lat, lon: gz.lon, name: gz.en } : await photonS(p, ev.g);
+      if (hit && hit.type !== "country" && (!ev.g || km(hit, ev.g) < 2000) && belongs(hit, ev)) {
+        city = { lat: hit.lat, lon: hit.lon, name: hit.name || p };
+        r = { lat: hit.lat, lon: hit.lon, prec: "city", spot: [hit.name || p, hit.country].filter(Boolean).join(", "), why: [["text", p]] };
+        break;
+      }
+    }
+  }
+  // 1b) şehir yoksa ama hükümet binası / meclis gibi bir yer geçiyorsa ya da olay protesto/siyasetse → yönetimin merkezi
+  const gov = GOVQ.find(([re]) => re.test(text));
+  if (!city && ev.g?.country && (gov || ev.cat === "protesto" || ev.cat === "siyaset")) {
+    const seat = SEATS.find((x) => x.c === ev.g.ad && x.re.test(text));   // ör. Doğu Libya meclisi → Bingazi
+    if (seat) seatUsed = true;
+    const cap = GAZ.find((g) => g.ad === (seat ? seat.city : CAPITAL[ev.g.ad]));
+    if (cap) {
+      city = { lat: cap.lat, lon: cap.lon, name: cap.en };
+      r = { lat: cap.lat, lon: cap.lon, prec: "capital", spot: `${cap.en}, ${ev.g.en}`, why: [[seat ? "seat" : "capital", cap.en]] };
+    }
+  }
+  // 2) metinde bir yapı geçiyorsa (hükümet binası, meclis, belediye, havalimanı…) şehrin içinde tam yerini bul
+  const lm = gov ? gov[1] : (text.match(LM) || [])[0]?.trim().replace(/^(?:the|of|de)\s+/i, "").replace(/^\S+['’]\p{L}+\s+/u, "");
+  if (lm && city) {
+    const hit = await photonS(`${lm} ${city.name || places[0] || ""}`.trim(), city);
+    if (hit && km(hit, city) < 30 && belongs(hit, ev)) r = { lat: hit.lat, lon: hit.lon, prec: "exact", spot: [hit.name || lm, hit.city || city.name].filter(Boolean).join(", "), why: [...(r?.why || []), ["venue", hit.name || lm]] };
+  }
+  // 3) Hâlâ belirli bir adres yoksa: olayın KONUSUNA göre ilgili kurumun adresi (dışişleri, savunma, meclis, bakanlık…)
+  const n0 = norm(text), m0 = ev.g && !ev.g.country ? ev.g.re.exec(n0) : null;
+  const isMeto = !!(m0 && METO.has(ev.g.ad) && isMetonym(n0, m0.index, m0[0].length));   // "Washington warns…" → kurum
+  const level = r ? r.prec : ev.prec;
+  // Çatışma ve afet sahada olur: bakanlık binasına bağlanmaz
+  if (ev.g && !seatUsed && ev.cat !== "catisma" && ev.cat !== "afet" && (level === "country" || level === "capital" || isMeto) && !(r && r.prec === "exact")) {
+    const ctry = countryOf(ev.g);
+    if (ctry) {
+      const inst = await institution(ctry, topicOf(text + " " + (ev.ctx || ""), ev.cat));
+      if (inst && isTitleContentMismatch(ev)) {
+        integrityWarn(ev, "kurum eşleşmesi iptal: başlık ve içerik uyuşmuyor");
+        r = { lat: ctry.lat, lon: ctry.lon, prec: "country", spot: ctry.en, why: [] };
+      } else if (inst) r = { lat: inst.lat, lon: inst.lon, prec: inst.city ? "capital" : "inst", spot: inst.city ? `${inst.name}, ${ctry.en}` : inst.name, why: [[inst.city ? "capital" : "inst", inst.name]] };
+    }
+  }
+  if (r) applyRef(ev, r);
+}
+
+/* ---------- Kurum adresleri (Wikipedia) ---------- */
+const CAP_OF = Object.fromEntries(Object.entries(CAPITAL).map(([c, city]) => [city, c]));
+const countryOf = (g) => g.country ? g : (COUNTRIES.find((c) => c.ad === CAP_OF[g.ad]) || nearestCountry(g));
+const TOPIC_RE = [
+  ["embassy", /(embassy|consulate|büyükelçilik|konsolosluk)/i],
+  ["parliament", /(parliament|lawmakers|legislat|\bbill\b|senate|duma|congress|house of representatives|national assembly|meclis|kanun teklifi|yasa)/i],
+  ["defense", /(military|troops|army|navy|air force|fighter jet|defen[cs]e|drills?|missile test|soldiers?|warship|mobiliz|savunma|ordu|asker|tatbikat)/i],
+  ["foreign", /(diplomat|envoy|warns?|accus|condemn|urges?|calls on|foreign minist|ambassador|talks|summit|treaty|agreement|deal with|sanction|bilateral|visit|dışişleri|büyükelçi|görüşme|zirve|anlaşma|yaptırım)/i],
+  ["presidency", /(president|kremlin|white house|presidential|élysée|cumhurbaşkan)/i],
+  ["interior", /(police|arrest|detain|crime|security service|migra|terror suspect|polis|gözaltı|tutuklan|göç)/i],
+  ["justice", /(court|judge|trial|sentenced|ruling|verdict|prosecutor|mahkeme|dava|savcı)/i],
+  ["economy", /(econom|inflation|budget|\btax|tariff|central bank|interest rate|currency|ekonomi|enflasyon|merkez bankası|bütçe|vergi)/i],
+  ["energy", /(\bgas\b|\boil\b|energy|pipeline|power grid|nuclear|enerji|doğalgaz|petrol)/i],
+  ["health", /(health|hospital|disease|virus|vaccine|outbreak|sağlık|salgın)/i],
+  ["education", /(school|universit|student|education|eğitim|okul|öğrenci)/i],
+  ["culture", /(culture|cultural|museum|film|\bart\b|toy|contest|heritage|patriot|festival|kültür)/i],
+];
+function topicOf(text, cat) {
+  for (const [k, re] of TOPIC_RE) if (re.test(text)) return k;
+  return cat === "catisma" ? "defense" : cat === "protesto" ? "parliament" : "government";
+}
+const INST_Q = {
+  embassy: (c) => `Embassy of ${c}`, parliament: (c) => `Parliament of ${c} building`, defense: (c) => `Ministry of Defence ${c}`,
+  foreign: (c) => `Ministry of Foreign Affairs ${c}`, presidency: (c) => `${c} presidential residence palace`, interior: (c) => `Ministry of Internal Affairs ${c}`,
+  justice: (c) => `Supreme Court of ${c}`, economy: (c) => `Ministry of Finance ${c}`, energy: (c) => `Ministry of Energy ${c}`,
+  health: (c) => `Ministry of Health ${c}`, education: (c) => `Ministry of Education ${c}`, culture: (c) => `Ministry of Culture ${c}`,
+  government: (c) => `Government of ${c} headquarters building`,
+};
+const INSTC = (() => { try { return JSON.parse(localStorage.getItem("wm-inst") || "{}"); } catch { return {}; } })();
+const saveINST = () => lazySave("inst", () => { try { localStorage.setItem("wm-inst", JSON.stringify(INSTC)); } catch {} });
+async function institution(country, topic) {
+  const key = "v1|" + topic + "|" + country.ad;
+  if (key in INSTC) return INSTC[key];
+  const capG = GAZ.find((g) => g.ad === CAPITAL[country.ad]);
+  const okPt = (pt) => capG ? km(pt, capG) < 70 : nearestCountry(pt) === country;
+  let res = null;
+  for (const tp of [...new Set([topic, "government", "presidency"])]) {
+    try {
+      const j = await getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&list=search&srlimit=6&srsearch=" + encodeURIComponent(INST_Q[tp](country.en)), 10000);
+      const titles = (j.query?.search || []).map((x) => x.title).filter((t) => !isCountryTitle(t));
+      if (!titles.length) continue;
+      const c = await getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&prop=coordinates&colimit=max&titles=" + encodeURIComponent(titles.join("|")), 10000);
+      const pages = new Map((c.query?.pages || []).filter((pg) => pg.coordinates?.length).map((pg) => [pg.title, pg]));
+      for (const t of titles) {
+        const pg = pages.get(t); if (!pg) continue;
+        const pt = { lat: pg.coordinates[0].lat, lon: pg.coordinates[0].lon };
+        if (okPt(pt)) { res = { ...pt, name: pg.title, topic: tp }; break; }
+      }
+      if (res) break;
+    } catch {}
+  }
+  if (!res && capG) res = { lat: capG.lat, lon: capG.lon, name: capG.en, topic: "capital", city: true };
+  INSTC[key] = res; saveINST(); return res;
+}
+/* ---------- Haber metnini okuma: tarih satırındaki şehir + metindeki mekân ---------- */
+const ARTC = new LRU(150), ARTIMG = new LRU(150);
+async function readArticle(url) {
+  if (ARTC.has(url)) return ARTC.get(url);
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 15000);
+  let txt = "";
+  try {
+    const r = await fetch("https://r.jina.ai/" + url, { signal: c.signal });
+    if (r.ok) {
+      txt = await r.text();
+      const i = txt.indexOf("Markdown Content:"); if (i >= 0) txt = txt.slice(i + 17);
+      const pics = [];
+      for (const m of txt.matchAll(/!\[([^\]]*)\]\((https?:[^)\s]+)/g)) {
+        const u = m[2];
+        if (/\.(svg|gif)(\?|$)|logo|icon|avatar|sprite|pixel|badge|placeholder|favicon|1x1|blank|spacer|author|byline|profile|ads?[./_-]/i.test(u)) continue;
+        if (!pics.some((x) => x.src === u)) pics.push({ src: u, cap: m[1].replace(/^Image \d+:?\s*/i, "").slice(0, 120) });
+        if (pics.length >= 5) break;
+      }
+      ARTIMG.set(url, pics);
+      txt = txt.replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").slice(0, 9000);
+    }
+  } catch {} finally { clearTimeout(t); }
+  ARTC.set(url, txt); return txt;
+}
+// [2.4] Haber metninden okunur paragraflar: menü, altyazı, abonelik kutusu, tarih satırı ayıklanır; uzun paragraf cümle sonunda kesilir
+const JUNK_P = /(cookie|sign up|subscribe|newsletter|reporting by|editing by|writing by|all rights reserved|advertisement|read more|click here|follow us|download (?:the|our) app|javascript|your browser|terms of (?:use|service)|privacy policy|share this|copyright|©|getty images|file photo|image caption|watch:|listen:|related:|recommended)/i;
+function cleanPara(p) {
+  return String(p || "").replace(/\s+/g, " ").replace(/[*_`#]+/g, "").replace(/^>\s*/, "")
+    .replace(/^\s*[A-Z][A-Z .'’-]{2,30}(?:,\s*[A-Z][A-Za-z.]+\.?)?(?:,?\s*[A-Z][a-z]{2,8}\.?\s+\d{1,2})?\s*\((?:Reuters|AP|AFP|Bloomberg|Xinhua|Anadolu)\)\s*[-–—]\s*/, "").trim();
+}
+function cutAt(p, max) { if (p.length <= max) return p; const c = p.slice(0, max), i = Math.max(c.lastIndexOf(". "), c.lastIndexOf("? "), c.lastIndexOf("! ")); return i > max * 0.5 ? c.slice(0, i + 1) : c.replace(/\s+\S*$/, "") + "…"; }
+function leadParas(txt, n = 5) {
+  const out = [], seen = new Set();
+  for (const raw of String(txt || "").split(/\n\s*\n/)) {
+    const p = cleanPara(raw);
+    if (p.length < 90 || /^[|\-+]/.test(p) || JUNK_P.test(p) || !/[.!?”"’)]$/.test(p) || /^(photo|image|video|caption)\b/i.test(p)) continue;
+    const k = norm(p).slice(0, 70); if (seen.has(k)) continue; seen.add(k);
+    out.push(cutAt(p, 680)); if (out.length >= n) break;
+  }
+  return out;
+}
+function dateline(txt) {
+  const m = /(?:^|\n)\s*\**([A-Z][A-Z .'’-]{2,28}?)(?:,\s*[A-Z][A-Za-z.]+)?\**\s*(?:,\s*[A-Z][a-z]{2,8}\.?\s+\d{1,2}\s*)?\(?(?:Reuters|AP|AFP|Bloomberg)\)?\s*[-–—]/.exec(txt);
+  return m ? m[1].trim().toLowerCase().replace(/(^|[\s-])\S/g, (x) => x.toUpperCase()) : null;
+}
+const VENUE = new RegExp(`(?:\\bat|\\bin|\\binside|\\boutside|\\bnear)\\s+(?:the\\s+)?((?:${CAP}\\s+){0,4}(?:Centre|Center|Hall|Exhibition|Expo|Park|Square|Stadium|Arena|Museum|Theatre|Theater|Forum|Palace|Pavilion|Gallery|Library|Cathedral|Mosque|Church|University|School|Hospital|Airport|Station|Port|Market|Bridge|Street|Avenue|Boulevard|Embassy|Ministry|Parliament|Building|Plant|Factory|Camp|Prison|Court|Kremlin)(?:\\s+(?:of\\s+)?${CAP}){0,3})`, "gu");
+const DEEPC = (() => { try { return JSON.parse(localStorage.getItem("wm-deep") || "{}"); } catch { return {}; } })();
+const saveDEEP = () => lazySave("deep", () => { try { const k = Object.keys(DEEPC); if (k.length > 500) for (const x of k.slice(0, 150)) delete DEEPC[x]; localStorage.setItem("wm-deep", JSON.stringify(DEEPC)); } catch {} });
+const deepable = (ev) => ev.url && !/wikipedia\.org|bsky\.app|gdacs|nasa\.gov/.test(ev.url);
+function applyDeep(ev, d) {
+  if (d.lead) ev.lead = d.lead;
+  if (d.cat && d.cat !== ev.cat && CATS[d.cat]) applyCat(ev, d.cat);
+  if (d.r && !(ev.prec === "exact" && d.r.prec !== "exact")) applyRef(ev, d.r);
+  else if (S.sel === ev.id) renderCard(ev);
+  if (S.sel === ev.id && ev.lead) ensureLeadTx(ev);
+}
+function deepLocate(ev) { if (ev.deepP) return ev.deepP; if (ev.deep || !deepable(ev)) return Promise.resolve(); return (ev.deepP = deepLocate0(ev)); }
+async function deepLocate0(ev) {
+  if (ev.deep || !deepable(ev)) return;
+  ev.deep = true;
+  if (DEEPC[ev.url]) { applyDeep(ev, DEEPC[ev.url]); return; }
+  const txt = await readArticle(ev.url); if (!txt) return;
+  const paras0 = leadParas(txt);
+  if (paras0.length && isTitleContentMismatch(ev, paras0.join(" "))) { integrityWarn(ev, "haber metni başlıkla uyuşmuyor"); DEEPC[ev.url] = {}; saveDEEP(); return; }
+  const paras = paras0, body = txt.split(/\n\s*\n/).map((p) => p.replace(/\s+/g, " ").trim()).filter((p) => p.length > 60).slice(0, 8).join(" ");
+  const d = { lead: paras, cat: classifyDeep(ev.title, paras) };
+  if (paras.length) { ev.lead = paras; if (S.sel === ev.id && ev.moreOpen) refreshMore(ev); }   // [2.4] metin, konum aranırken bile hemen görünür
+  // 1) Şehir: tarih satırı (en güçlü kanıt) > başlıktaki yer > metindeki "in/at X" > puanlı sözlük adayı
+  const dl = dateline(txt), clean = scrub(body);
+  const tries = [];
+  if (dl && !ORG_PLACE.test(dl)) tries.push([dl, "dateline"]);
+  ORG_PLACE.lastIndex = 0;
+  for (const p of placePhrases(scrub(ev.title))) tries.push([p, "text"]);
+  for (const p of placePhrases(clean)) tries.push([p, "text"]);
+  const sc = scorePlaces(ev.title + " " + clean).filter((c) => !c.g.country && c.s > 1).slice(0, 2);
+  for (const c of sc) tries.push([c.g.en, "text"]);
+  let city = null, cw = null;
+  for (const [p, w] of tries) {
+    const gz = GAZ.find((g) => !g.country && g.re.test(norm(p)));
+    const hit = gz ? { lat: gz.lat, lon: gz.lon, name: gz.en, region: gz.region } : await photonS(p, ev.g);
+    if (hit && hit.type !== "country" && belongs(hit, ev) && (!ev.g || !ev.g.country || km(hit, ev.g) < 2600)) { city = { lat: hit.lat, lon: hit.lon, name: hit.name || p, region: hit.region || /state|county/.test(hit.type || "") }; cw = [w, city.name]; break; }
+  }
+  if (city) {
+    // 2) Mekân: metindeki park, meydan, bina, havalimanı… şehrin içinde aranır
+    const venues = [...clean.matchAll(VENUE)].map((m) => m[1].trim());
+    const lm = (clean.match(LM) || [])[0]; if (lm) venues.push(lm.trim().replace(/^(?:the|of|de)\s+/i, ""));
+    const PARK = new RegExp(`((?:${CAP}\\s+){1,4}(?:Park|Plaza|Square|Beach|Mall|Station|Airport|Bridge|Stadium|Campus|Hospital|Market|Church|Mosque|Temple|Street|Avenue))`, "gu");
+    for (const m of clean.matchAll(PARK)) venues.push(m[1].trim());
+    for (const v of [...new Set(venues)].slice(0, 5)) {
+      const hit = await photonS(`${v} ${city.name}`, city);
+      if (hit && km(hit, city) < (city.region ? 400 : 40)) { d.r = { lat: hit.lat, lon: hit.lon, prec: "exact", spot: `${hit.name || v}, ${hit.city || city.name}`, why: [cw, ["venue", hit.name || v]] }; break; }
+    }
+    if (!d.r && !city.region && (ev.cat === "protesto" || ev.cat === "siyaset")) {
+      // Mekân metinde yoksa: protestolar ve siyasi olaylar çoğunlukla meclis, hükümet binası ya da belediye önünde olur
+      for (const q of ev.cat === "protesto" ? ["parliament", "city hall", "main square"] : ["parliament", "government building", "city hall"]) {
+        const hit = await photonS(`${q} ${city.name}`, city);
+        if (hit && km(hit, city) < 25 && hit.type !== "city") { d.r = { lat: hit.lat, lon: hit.lon, prec: "exact", spot: `${hit.name || q}, ${city.name}`, why: [cw, ["likely", hit.name || q]] }; break; }
+      }
+    }
+    if (!d.r) d.r = { lat: city.lat, lon: city.lon, prec: city.region ? "region" : "city", spot: city.name, why: [cw] };
+  }
+  DEEPC[ev.url] = d; saveDEEP();
+  applyDeep(ev, d);
+}
+function applyCat(ev, c) {
+  if (!CATS[c] || ev.cat === c) return;
+  const src = ev.src, e = S.ents.get(ev.id);
+  dropFx(ev); if (e) ds.entities.remove(e); S.ents.delete(ev.id); S.events.delete(ev.id);
+  ev.cat = c; ev.aktif = isActive(ev); addOne(src, ev);
+  if (S.sel === ev.id) renderCard(ev);
+  clearTimeout(applyCat.t); applyCat.t = setTimeout(() => { applyFilter(); updateGlows(); }, 300);
+}
+/* Arka plan analizi: her habere sırayla girilir (Jina sınırı ≈20/dk → 3,5 sn'de bir) */
+const AQ = []; let aqBusy = false;
+function enqueueDeep(ev) { if (!ev.deep && deepable(ev)) { if (DEEPC[ev.url]) { ev.deep = true; applyDeep(ev, DEEPC[ev.url]); } else AQ.push(ev); pumpDeep(); } }
+async function pumpDeep() {
+  if (aqBusy) return; aqBusy = true;
+  while (AQ.length) {
+    const coarse = (e) => (e.prec === "country" || e.prec === "region" || e.prec === "capital") ? 1 : 0;
+    AQ.sort((a, b) => coarse(b) - coarse(a) || (b.time || 0) - (a.time || 0));
+    const ev = AQ.shift();
+    if (ev.deep || S.events.get(ev.id) !== ev) continue;
+    try { await deepLocate(ev); } catch {}
+    S.src.deep.n = Object.keys(DEEPC).length; S.src.deep.t = new Date(); S.src.deep.durum = "ok"; renderSrcs();
+    await sleep(5000);                                           // [2.3] Jina okuma sınırına (≈20/dk) uzak dur
+  }
+  aqBusy = false;
+}
+const GQ = []; let gqBusy = false;
+function enqueueGeo(ev, front = false) {
+  if (DONE.has(ev.id) || ev.prec === "exact") return;
+  front ? GQ.unshift(ev) : GQ.push(ev); pumpGeo();
+}
+async function pumpGeo() {
+  if (gqBusy) return; gqBusy = true;
+  while (GQ.length) {
+    const ev = GQ.shift();
+    if (DONE.has(ev.id) || !S.events.has(ev.id)) continue;
+    try { await refineOne(ev); } catch {}
+    await sleep(1100);   // OpenStreetMap servisine saniyede en fazla bir istek
+  }
+  gqBusy = false;
+}
+// Sherlock ağı: olayın haberinde başka yerler/ülkeler de geçiyor ve kırmızı iplerle bağlanıyor. Olay kendi kategorisinde de kalır.
+function hasNet(ev) {
+  const k = ev.title + "|" + ev.lat.toFixed(3) + "|" + ev.lon.toFixed(3);
+  if (ev._netK !== k) { ev._netK = k; try { ev._net = relatedPlaces(ev).length > 0; } catch { ev._net = false; } }
+  return ev._net;
+}
+function matches(ev) {
+  if (S.solo && ev.cat !== S.solo) return false;
+  if (S.onlyActive && !ev.aktif) return false;
+  if (S.onlyNet && !hasNet(ev)) return false;
+  if (!S.q) return true;
+  return norm(ev.title + " " + titleOf(ev) + " " + placeOf(ev) + " " + (ev.place || "")).includes(S.q);
+}
+function applyFilter() {
+  ds.entities.suspendEvents();
+  try {
+    for (const [id, ev] of S.events) {
+      const e = S.ents.get(id), on = matches(ev);
+      if (e) { const has = ds.entities.contains(e); if (on && !has) ds.entities.add(e); else if (!on && has) ds.entities.remove(e); }
+      for (const w of [...(ev.ring || []), ev.halo].filter(Boolean)) w.show = on;
+    }
+  } finally { ds.entities.resumeEvents(); }
+  renderChips(); computeVis(); scene.requestRender(); updateGlows();
+}
+
+/* ---------- Arayüz ---------- */
+function renderStatic() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i]").forEach((el) => (el.textContent = T(el.dataset.i)));
+  $("q").placeholder = T("search");
+
+  if (!$("upd").textContent) $("upd").textContent = T("connecting");
+}
+function renderChips() {
+  const counts = {}; let total = 0, act = 0;
+  let net = 0;
+  for (const ev of S.events.values()) { counts[ev.cat] = (counts[ev.cat] || 0) + 1; total++; if (ev.aktif) act++; if (hasNet(ev)) net++; }
+  $("chips").innerHTML =
+    `<button class="chip" data-cat="" aria-pressed="${!S.solo}" style="--c:#e9eef3"><i></i>${T("all")}<em>${total}</em></button>` +
+    `<button class="chip net-chip" data-net="1" aria-pressed="${S.onlyNet}" style="--c:#ff3b3b"><i></i>${T("netCat")}<em>${net}</em></button>` +
+    Object.entries(CATS).map(([k, c]) =>
+      `<button class="chip" data-cat="${k}" aria-pressed="${S.solo === k}" style="--c:${c}"><i></i>${T(k)}<em>${counts[k] || 0}</em></button>`).join("") +
+    `<button class="chip act-chip" data-act="1" aria-pressed="${S.onlyActive}" style="--c:#e5484d"><i class="pulse"></i>${T("onlyActive")}<em>${act}</em></button>`;
+}
+$("chips").addEventListener("click", (e) => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  if (b.dataset.act) S.onlyActive = !S.onlyActive;
+  else if (b.dataset.net) { S.onlyNet = !S.onlyNet; if (S.onlyNet) S.solo = null; }   // [2.3] Linked ↔ kategori birbirini sıfırlar
+  else { const k = b.dataset.cat || null; S.solo = S.solo === k ? null : k; S.onlyNet = false; }   // [2.3]
+  applyFilter();
+});
+function renderSrcs() {
+  $("srcs").innerHTML = Object.entries(S.src).map(([k, s]) => {
+    const sym = s.durum === "ok" ? "●" : s.durum === "err" ? "✕" : "○";
+    const txt = s.durum === "ok" ? `${s.n} · ${hhmm(s.t)}` : s.durum === "err" ? (s.msg || T("err")) : T("loading") + " " + (s.msg || "");
+    return `<span class="${s.durum}">${sym} ${esc(T("src_" + k))} ${esc(txt)}${s.per ? ` <small>(${esc(T("every", s.per))})</small>` : ""}</span>`;
+  }).join("");
+}
+const sortKey = (ev) => ev.time || 0;   // her zaman güncelden eskiye
+let listTxT = 0;
+function renderList() {
+  renderListNow();
+  clearTimeout(listTxT);
+  listTxT = setTimeout(() => {
+    if (PANEL.hidden) return;
+    const arr = [...S.events.values()].filter(matches).sort((a, b) => sortKey(b) - sortKey(a)).slice(0, 60);
+    translateVisible(arr);
+  }, 700);
+}
+function descOf(ev) {
+  const t = norm(ev.title).slice(0, 50);
+  const d = [ev.tx?.[LANG]?.ctx, ev.description, ev.lead?.[0], ev.ctx].find((x) => x && norm(x).slice(0, 50) !== t) || "";
+  return d.replace(/\s+/g, " ").trim().slice(0, 240);
+}
+let pressing = false;
+function renderListNow() {
+  const n = [...S.events.values()].filter(matches).length;
+  $("pcount").textContent = n ? String(n) : "";
+  if (PANEL.hidden || pressing) return;
+  const arr = [...S.events.values()].filter(matches).sort((a, b) => sortKey(b) - sortKey(a)).slice(0, 300);
+  const Lst = $("list");
+  if (!arr.length) { Lst.innerHTML = `<li class="empty">${S.events.size ? T("emptyView") : T("loadingData")}</li>`; return; }   // [2.4] liste yenilemesi karta dokunmaz
+  const keepTop = Lst.scrollTop;                                // [2.3] yeniden çizimde kaydırma yeri korunur
+  Lst.innerHTML = arr.map((ev) => {
+    const d = descOf(ev);
+    return `<li data-li="${esc(ev.id)}"${S.sel === ev.id ? ' class="open"' : ""}><button data-id="${esc(ev.id)}" ${S.sel === ev.id ? 'aria-current="true"' : ""} style="--c:${CATS[ev.cat]}">
+    <span class="k"></span>
+    <span class="tw"><span class="t">${esc(titleOf(ev))}</span>${d ? `<span class="d">${esc(d)}</span>` : ""}
+      <span class="m">${ev.aktif ? `<span class="st on">${T("on")}</span> · ` : ""}${esc(T(ev.cat))}${placeOf(ev) ? " · " + esc(placeOf(ev)) : ""}</span></span>
+    <span class="ago">${ev.live ? `<b class="new">${T("nw")}</b>` : ""}${esc(when(ev))}</span></button></li>`;
+  }).join("");
+  Lst.scrollTop = keepTop;
+  placeCard();
+}
+// [2.4] Elde tutulan kart: yalnızca YENİ bir haber seçilince ya da ekran/yaklaşma durumu değişince yerleşir.
+// Liste yenilenmesi, çeviri, görsel yüklenmesi kartı oynatmaz; kart sabit boyutludur, içerik kendi içinde kayar. Boyutu tutamaçtan değiştirilebilir ve hatırlanır.
+let cardKey = "";
+const cardSz = (() => { try { return JSON.parse(localStorage.getItem("wm-card") || "{}") || {}; } catch { return {}; } })();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function cardGeom() {
+  const mob = matchMedia("(max-width:760px)").matches, eng = document.body.classList.contains("engaged");
+  const vw = innerWidth, vh = innerHeight;
+  if (mob) {
+    const H = clamp((eng ? cardSz.hme : cardSz.hm) || (eng ? 200 : Math.round(vh * 0.5)), 150, vh - 90);
+    return { mode: "t", ab: true, x: 8, W: vw - 16, H, top: vh - 10 - H };
+  }
+  const W = clamp(cardSz.w || 400, 300, Math.min(600, vw - 32));
+  if (eng) { const H = clamp(cardSz.hb || Math.round(vh * 0.52), 200, vh - 150); return { mode: "tl", ab: true, x: vw - W - 16, W, H, top: vh - 16 - H }; }
+  const r = PANEL.hidden ? null : PANEL.getBoundingClientRect();
+  let x, y;
+  if (r && r.right + 16 + W < vw - 8) { x = r.right + 16; y = Math.max(84, r.top); }
+  else if (r && r.left - 16 - W > 8) { x = r.left - 16 - W; y = Math.max(84, r.top); }
+  else { x = vw - W - 16; y = 84; }
+  const H = clamp(cardSz.h || Math.min(640, vh - y - 24), 220, vh - y - 12);
+  return { mode: "br", ab: false, x, W, H, top: y };
+}
+function placeCard(force) {
+  const card = $("card"); if (card.parentNode !== document.body) document.body.appendChild(card);
+  const on = !!S.sel && S.events.has(S.sel);
+  if (!on) { card.hidden = true; card.classList.remove("held"); cardKey = ""; document.body.classList.remove("cardon"); syncHudOut(); return; }
+  const g = cardGeom();
+  const key = `${S.sel}|${g.mode}|${document.body.classList.contains("engaged")}|${innerWidth}x${innerHeight}`;
+  if (!force && key === cardKey && !card.hidden) return;
+  const fresh = card.hidden || !cardKey.startsWith(S.sel + "|");
+  cardKey = key;
+  Object.assign(card.style, { left: g.x + "px", top: g.top + "px", width: g.W + "px", height: g.H + "px", bottom: "auto", right: "auto", maxHeight: "none" });
+  card.dataset.g = g.mode;
+  document.body.style.setProperty("--cardH", (g.ab ? g.H : 0) + "px");
+  card.hidden = false; card.classList.add("held"); document.body.classList.add("cardon");
+  if (fresh && card.animate && !matchMedia("(prefers-reduced-motion: reduce)").matches)
+    card.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.7,.2,1)" });
+  syncHudOut();
+}
+// Tutamaç: köşeden (masaüstü) ya da üst kenardan (telefon) sürükleyerek büyüt/küçült
+(() => {
+  const card = $("card"); let d = null;
+  card.addEventListener("pointerdown", (e) => {
+    const gr = e.target.closest(".grip"); if (!gr) return;
+    e.preventDefault(); const r = card.getBoundingClientRect();
+    d = { kind: card.dataset.g, x0: e.clientX, y0: e.clientY, r, id: e.pointerId };
+    try { card.setPointerCapture(e.pointerId); } catch {}
+    card.classList.add("sizing");
+  });
+  card.addEventListener("pointermove", (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const dx = e.clientX - d.x0, dy = e.clientY - d.y0, r = d.r, vw = innerWidth, vh = innerHeight;
+    if (d.kind === "br") {
+      const W = clamp(r.width + dx, 300, vw - r.left - 8), H = clamp(r.height + dy, 220, vh - r.top - 8);
+      card.style.width = W + "px"; card.style.height = H + "px";
+    } else if (d.kind === "tl") {
+      const W = clamp(r.width - dx, 300, r.right - 8), H = clamp(r.height - dy, 200, r.bottom - 70);
+      Object.assign(card.style, { width: W + "px", left: r.right - W + "px", height: H + "px", top: r.bottom - H + "px" });
+    } else {
+      const H = clamp(r.height - dy, 150, r.bottom - 70);
+      Object.assign(card.style, { height: H + "px", top: r.bottom - H + "px" });
+    }
+    if (d.kind !== "br") document.body.style.setProperty("--cardH", card.style.height);
+  });
+  const end = (e) => {
+    if (!d || (e && e.pointerId !== d.id)) return;
+    const r = card.getBoundingClientRect();
+    if (d.kind === "br") { cardSz.w = Math.round(r.width); cardSz.h = Math.round(r.height); }
+    else if (d.kind === "tl") { cardSz.w = Math.round(r.width); cardSz.hb = Math.round(r.height); }
+    else if (document.body.classList.contains("engaged")) cardSz.hme = Math.round(r.height); else cardSz.hm = Math.round(r.height);
+    d = null; card.classList.remove("sizing");
+    try { localStorage.setItem("wm-card", JSON.stringify(cardSz)); } catch {}
+  };
+  card.addEventListener("pointerup", end); card.addEventListener("pointercancel", end); card.addEventListener("lostpointercapture", () => end());
+})();
+addEventListener("resize", () => placeCard());
+/* Dokun: haberi ele al (ayrı kart açılır) · Tekrar dokun: bırak. Yakınlaşma yalnızca ZOOM IN düğmesiyle. */
+$("list").addEventListener("click", (e) => {
+  const id = e.target.closest("button[data-id]")?.dataset.id; if (!id) return;
+  const ev = S.events.get(id); if (!ev) return;
+  if (S.sel === id) closeSel(); else select(ev);
+});
+// [2.4] ZOOM IN / ZOOM OUT kartın içinde (alt çubuk). Ayrı, bağımsız düğme yok.
+const ZI_SVG = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><defs><linearGradient id="zg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#3fd3f5"/></linearGradient></defs>
+  <circle cx="16" cy="16" r="9.5" stroke="url(#zg)" stroke-width="1.6"/><path d="M16 2.5v6M16 23.5v6M2.5 16h6M23.5 16h6" stroke="url(#zg)" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const ZO_SVG = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><defs><linearGradient id="zg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#3fd3f5"/></linearGradient></defs>
+  <circle cx="16" cy="16" r="12.5" stroke="url(#zg2)" stroke-width="1.6"/><path d="M4 16c3-4.5 7-7 12-7s9 2.5 12 7M4 16c3 4.5 7 7 12 7s9-2.5 12-7M16 3.5c-3.2 3.4-4.8 7.6-4.8 12.5s1.6 9.1 4.8 12.5M16 3.5c3.2 3.4 4.8 7.6 4.8 12.5S19.2 25.1 16 28.5" stroke="url(#zg2)" stroke-width="1.1" opacity=".75"/></svg>`;
+let zBusy = "";
+function zoomBtnHTML(ev) {
+  const eng = document.body.classList.contains("engaged"), here = eng && hudEv && hudEv.id === ev.id;
+  if (here) return `<button class="zbtn out" id="zBtn" data-z="out">${ZO_SVG}<span class="zw"><span class="zt">${esc(T("exit"))}</span><small>Back to the whole world</small></span></button>`;
+  const site = ev.spot || placeOf(ev) || ev.g?.en || "";
+  return `<button class="zbtn${zBusy === ev.id ? " busy" : ""}" id="zBtn" data-z="in">${ZI_SVG}<span class="zw"><span class="zt">${esc(T("zoomIn"))}</span><small>${zBusy === ev.id ? "Reading the report · locating the site" : esc(site ? "Fly to " + site : "Fly to the scene")}</small></span></button>`;
+}
+function syncZoomBtn() {
+  const ev = S.sel && S.events.get(S.sel), bar = document.querySelector("#card .zbar");
+  if (ev && bar) { const h = zoomBtnHTML(ev); if (bar.dataset.h !== h) { bar.innerHTML = h; bar.dataset.h = h; } }
+  syncHudOut();
+}
+function syncHudOut() {
+  // Kart kapalıyken yaklaşmadan çıkış yine aynı tasarımda ekranın altında
+  const b = $("hudOut"); if (!b) return;
+  const show = document.body.classList.contains("engaged") && $("card").hidden;
+  if (show && !b.innerHTML) b.innerHTML = `${ZO_SVG.replace(/zg2/g, "zg3")}<span class="zw"><span class="zt">${esc(T("exit"))}</span><small>Back to the whole world</small></span>`;
+  b.hidden = !show;
+}
+$("card").addEventListener("click", (e) => {
+  const b = e.target.closest("#zBtn"); if (!b) return;
+  if (b.dataset.z === "out") { disengage(); return; }
+  const ev = S.events.get(S.sel); if (ev) engage(ev);
+});
+function closeSel() { $("card").hidden = true; $("card").classList.remove("held"); selMark.show = false; S.sel = null; cardKey = ""; document.body.classList.remove("cardon"); clearLinks(); renderList(); scene.requestRender(); syncHudOut(); }
+$("q").addEventListener("input", (e) => { S.q = norm(e.target.value.trim()); applyFilter(); });
+/* Haber paneli: üst bardaki düğmeyle açılır/kapanır, başlığından tutulup ekranda istenen yere taşınır */
+const PANEL = $("panel");
+function placePanel(pos) {
+  const m = matchMedia("(max-width:760px)").matches;
+  const W = m ? Math.min(innerWidth - 16, 520) : Math.min(400, innerWidth - 24), H = Math.round(m ? innerHeight * 0.56 : Math.min(innerHeight - 120, 680));
+  PANEL.style.width = W + "px"; PANEL.style.height = H + "px";
+  const d = pos || (m ? { x: (innerWidth - W) / 2, y: innerHeight - H - 12 } : { x: 12, y: 74 });
+  const x = Math.max(4, Math.min(d.x, innerWidth - W - 4)), y = Math.max(4, Math.min(d.y, innerHeight - 60));
+  PANEL.style.left = x + "px"; PANEL.style.top = y + "px";
+  return { x, y };
+}
+let panelPos = (() => { try { return JSON.parse(localStorage.getItem("wm-panel") || "null"); } catch { return null; } })();
+function setPanel(open) {
+  PANEL.hidden = !open; $("listBtn").setAttribute("aria-pressed", String(open));
+  if (open) { panelPos = placePanel(panelPos); renderList(); }
+}
+const toggleSheet = () => setPanel(PANEL.hidden);
+$("pClose").addEventListener("click", () => setPanel(false));
+addEventListener("resize", () => { if (!PANEL.hidden) panelPos = placePanel(panelPos); });
+(() => {
+  let drag = null;
+  $("pdrag").addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;
+    const r = PANEL.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId };
+    $("pdrag").setPointerCapture(e.pointerId); PANEL.classList.add("dragging");
+  });
+  $("pdrag").addEventListener("pointermove", (e) => { if (drag) panelPos = placePanel({ x: e.clientX - drag.dx, y: e.clientY - drag.dy }); });
+  const end = () => { if (!drag) return; drag = null; PANEL.classList.remove("dragging"); try { localStorage.setItem("wm-panel", JSON.stringify(panelPos)); } catch {} };
+  $("pdrag").addEventListener("pointerup", end); $("pdrag").addEventListener("pointercancel", end);
+})();
+$("listBtn").addEventListener("click", toggleSheet);
+
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } }
+
+/* ---------- Görseller: haberin fotoğrafları + açıklamayı yapan kişi/kurum + olay yeri ---------- */
+const PEOPLE = [
+  [/\btrump\b/i, "Donald Trump"], [/\bvance\b/i, "JD Vance"], [/\brubio\b/i, "Marco Rubio"], [/\bhegseth\b/i, "Pete Hegseth"],
+  [/\berdo[gğ]an|\btayyip\b/i, "Recep Tayyip Erdoğan"], [/\bfidan\b/i, "Hakan Fidan"], [/\bputin\b/i, "Vladimir Putin"], [/\blavrov\b/i, "Sergey Lavrov"],
+  [/\bpeskov\b/i, "Dmitry Peskov"], [/\bzelensk[yi]+y?\b/i, "Volodymyr Zelenskyy"], [/\bmacron\b/i, "Emmanuel Macron"], [/\bstarmer\b/i, "Keir Starmer"],
+  [/\bnetanyahu\b/i, "Benjamin Netanyahu"], [/\bxi jinping\b/i, "Xi Jinping"], [/\bmodi\b/i, "Narendra Modi"], [/\bmerz\b/i, "Friedrich Merz"],
+  [/\bmeloni\b/i, "Giorgia Meloni"], [/\bpope leo\b|\bpope\b/i, "Pope Leo XIV"], [/\blula\b/i, "Luiz Inácio Lula da Silva"], [/\bmilei\b/i, "Javier Milei"],
+  [/\bsheinbaum\b/i, "Claudia Sheinbaum"], [/\bcarney\b/i, "Mark Carney"], [/\balbanese\b/i, "Anthony Albanese"], [/\bkim jong[- ]un\b/i, "Kim Jong Un"],
+  [/\btakaichi\b/i, "Sanae Takaichi"], [/\blee jae[- ]myung\b/i, "Lee Jae-myung"], [/\brutte\b/i, "Mark Rutte"], [/\bvon der leyen\b/i, "Ursula von der Leyen"],
+  [/\bguterres\b/i, "António Guterres"], [/\bpezeshkian\b/i, "Masoud Pezeshkian"], [/\bkhamenei\b/i, "Ali Khamenei"], [/\bbin salman\b/i, "Mohammed bin Salman"],
+  [/\bal-sharaa\b|\bsharaa\b/i, "Ahmed al-Sharaa"], [/\blukashenko\b/i, "Alexander Lukashenko"], [/\baliyev\b/i, "Ilham Aliyev"], [/\bpashinyan\b/i, "Nikol Pashinyan"],
+  [/\borb[aá]n\b/i, "Viktor Orbán"], [/\bsisi\b/i, "Abdel Fattah el-Sisi"], [/\btinubu\b/i, "Bola Tinubu"], [/\bramaphosa\b/i, "Cyril Ramaphosa"],
+  [/\bshehbaz\b/i, "Shehbaz Sharif"], [/\bprabowo\b/i, "Prabowo Subianto"], [/\bmarcos\b/i, "Bongbong Marcos"], [/\bgrossi\b/i, "Rafael Grossi"],
+  [/\btedros\b/i, "Tedros Adhanom Ghebreyesus"], [/\blagarde\b/i, "Christine Lagarde"], [/\bpowell\b/i, "Jerome Powell"], [/\bmusk\b/i, "Elon Musk"],
+];
+const WIMG = new LRU(200);
+async function wikiImage(q) {
+  if (WIMG.has(q)) return WIMG.get(q);
+  let r = null;
+  try {
+    const j = await getJSON(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=1&prop=pageimages|description&piprop=thumbnail&pithumbsize=800&format=json&origin=*`, 9000);
+    const pg = Object.values(j.query?.pages || {})[0];
+    if (pg?.thumbnail?.source) r = { src: pg.thumbnail.source, cap: pg.title + (pg.description ? " · " + pg.description : ""), kind: "wiki" };
+  } catch {}
+  WIMG.set(q, r); return r;
+}
+async function loadMedia(ev) {
+  if (ev.mediaP) return ev.mediaP;
+  ev.mediaP = (async () => {
+    const text = ev.title + " " + (ev.description || "");
+    const news = (ev.imgs || []).map((x) => ({ ...x, kind: "news" }));
+    // 1) haberin kendi fotoğrafları (protestocular, çatışma, açıklama anı)
+    if (deepable(ev)) { try { await readArticle(ev.url); } catch {} for (const x of ARTIMG.get(ev.url) || []) news.push({ ...x, kind: "news" }); }
+    // 2) açıklamayı yapan kişi(ler) ve kurum
+    const who = PEOPLE.filter(([re]) => re.test(ev.title)).slice(0, 2).map(([, n]) => n);
+    const inst = ev.spot && ev.why?.some((w) => w && (w[0] === "anchor" || w[0] === "inst")) ? ev.spot.split(",")[0] : null;
+    const place = !inst && ev.prec === "exact" && ev.spot ? ev.spot.split(",")[0] : null;
+    const extra = (await Promise.all([...who.map(wikiImage), inst ? wikiImage(inst) : null, place ? wikiImage(place + " " + (ev.g?.en || "")) : null])).filter(Boolean);
+    const seen = new Set(), out = [];
+    for (const x of [...news, ...extra]) { const k = x.src.replace(/[?#].*$/, ""); if (seen.has(k)) continue; seen.add(k); out.push(x); }
+    ev.media = out.slice(0, 8);
+    if (!ev.imgs?.length && news.length) ev.imgs = news.slice(0, 3);
+    if (S.sel === ev.id) renderMedia(ev);
+    renderList();
+    return ev.media;
+  })();
+  return ev.mediaP;
+}
+function mediaHTML(ev) {
+  const m = ev.media;
+  if (!m) return `<div class="media loading" id="media"><div class="hero sk"></div></div>`;
+  if (!m.length) return `<div class="media" id="media" hidden></div>`;
+  const i = Math.min(ev.mi || 0, m.length - 1), cur = m[i];
+  const lab = cur.kind === "wiki" ? cur.cap : (cur.cap || T("photoNews"));
+  return `<div class="media" id="media">
+    <figure class="hero"><img src="${esc(cur.src)}" alt="${esc(cur.cap || ev.title)}" referrerpolicy="no-referrer" loading="eager" data-bad="${i}">
+      <figcaption><span class="mk">${esc(T(cur.kind === "wiki" ? "photoWho" : "photoNews"))}</span>${cur.kind === "wiki" || cur.cap ? esc(lab) : ""}</figcaption>
+      ${m.length > 1 ? `<span class="cnt">${i + 1} / ${m.length}</span>` : ""}</figure>
+    ${m.length > 1 ? `<div class="thumbs">${m.map((x, j) => `<button data-mi="${j}" ${j === i ? 'aria-current="true"' : ""}><img src="${esc(x.src)}" alt="" referrerpolicy="no-referrer" loading="lazy" data-bad="${j}"></button>`).join("")}</div>` : ""}
+  </div>`;
+}
+function renderMedia(ev) {
+  const old = $("media"); if (!old) return;
+  old.outerHTML = mediaHTML(ev);
+  const box = $("media"); if (!box) return;
+  box.querySelectorAll("img[data-bad]").forEach((im) => im.addEventListener("error", () => {
+    const bad = im.getAttribute("src"); ev.media = ev.media.filter((x) => x.src !== bad); if ((ev.mi || 0) >= ev.media.length) ev.mi = 0; renderMedia(ev);   // [2.3] adrese göre
+  }, { once: true }));
+  box.querySelector(".hero img")?.addEventListener("click", () => { if (ev.media.length > 1) { ev.mi = ((ev.mi || 0) + 1) % ev.media.length; renderMedia(ev); } });
+  box.querySelectorAll("button[data-mi]").forEach((b) => b.addEventListener("click", () => { ev.mi = +b.dataset.mi; renderMedia(ev); }));
+}
+function renderCard(ev) {
+  const arts = (ev.articles || []).slice(0, 8), tx = ev.tx?.[LANG];
+  const showOrig = tx && tx.title && tx.title !== ev.title;
+  const lv = ev.alertLv ? (L.en.lv[ev.alertLv] || ev.alertLv) : "";
+  const card = $("card"), old = $("cbody");
+  const keep = old && card.dataset.ev === ev.id ? old.scrollTop : 0;   // [2.4] aynı haber yeniden çizilince okunan yer korunur
+  card.dataset.ev = ev.id;
+  card.innerHTML = `
+    <div class="ctop"><span class="pill" style="--c:${CATS[ev.cat]}">${esc(T(ev.cat))}</span>
+      <span class="st ${ev.aktif ? "on" : "off"}">${T(ev.aktif ? "onL" : "offL")}</span>
+      ${lv ? `<span class="alert">${esc(T("alert"))}: ${esc(lv)}</span>` : ""}
+      <button class="x" id="cx" aria-label="${esc(T("close"))}">×</button></div>
+    <div class="cbody" id="cbody">
+    ${mediaHTML(ev)}
+    <h2>${esc(titleOf(ev))}</h2>
+    ${ev.txBusy ? `<span class="tx">${esc(T("translating"))}</span>` : showOrig ? `<span class="tx">${esc(T("autoTx"))}</span><div class="orig">${esc(T("original"))}: ${esc(ev.title)}</div>` : ""}
+    <div class="meta">
+      ${placeOf(ev) ? `<span>${esc(placeOf(ev))}</span>` : ""}
+      <span>${esc(when(ev))}${ev.time && !ev.day ? " · " + esc(new Date(ev.time).toLocaleString(loc(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : ""}</span>
+      <span>${esc(T("source"))}: ${esc(ev.domain || ev.source)}${ev.count > 1 ? " · " + esc(T("reports", ev.count)) : ""}</span>
+      <span>${esc(T("prec"))}: ${esc(T("prec_" + (ev.prec || "city")))} · ${esc(dms(ev.lat, ev.lon))}</span>
+      ${ev.why?.length ? `<span class="why">${esc(T("why"))}: ${ev.why.filter(Boolean).map(([k, v]) => esc(T("why_" + k, v))).join(" · ")}</span>` : ""}
+    </div>
+    ${arts.length > 1 ? `<ul class="arts">${arts.map((a, i) => `<li><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(tx?.arts?.[i] || a.title || a.url)}<small>${esc(hostOf(a.url))}${a.time ? " · " + esc(ago(a.time)) : ""}</small></a></li>`).join("")}</ul>` : ""}
+    <div class="acts">
+      <button class="act" id="moreBtn" aria-expanded="${!!ev.moreOpen}">${esc(T(ev.moreOpen ? "less" : "more"))}</button>
+      <button class="act${ev.video ? " hasvid" : ""}" id="lvBtn" aria-expanded="${!!ev.lvOpen}">${esc(T("lvBtn"))}</button>
+      ${ev.url ? `<a class="act" href="${esc(ev.url)}" target="_blank" rel="noopener">${esc(T("openSrc"))}</a>` : ""}
+    </div>
+    ${ev.moreOpen ? `<div class="more" id="more">${moreHTML(ev)}</div>` : ""}
+    ${ev.lvOpen ? `<div class="more">${liveHTML(ev)}</div>` : ""}
+    </div>
+    <div class="zbar"></div>
+    <i class="grip g-br" title="Resize"></i><i class="grip g-tl" title="Resize"></i><i class="grip g-t" title="Resize"></i>`;
+  if (ev.media) renderMedia(ev); else loadMedia(ev);
+  $("cx").onclick = closeSel;
+  $("moreBtn").onclick = () => { ev.moreOpen = !ev.moreOpen; renderCard(ev); if (ev.moreOpen) { loadMore(ev); requestAnimationFrame(() => $("more")?.scrollIntoView({ block: "start", behavior: "smooth" })); } };
+  $("lvBtn").onclick = () => { ev.lvOpen = !ev.lvOpen; renderCard(ev); if (ev.lvOpen && !ev.lv) loadLive(ev); };
+  if (keep) $("cbody").scrollTop = keep;
+  syncZoomBtn();
+  placeCard();
+}
+// Çeviri, orijinalin sayılarını ve özel adlarını korumalı; uzunluk makul olmalı. Aksi hâlde çeviri reddedilir.
+function translationFaithful(orig, tr) {
+  if (!tr) return false;
+  const ratio = tr.length / Math.max(1, orig.length); if (ratio < 0.4 || ratio > 2.6) return false;
+  const nums = orig.match(/\d+/g) || []; if (nums.some((n) => !tr.includes(n))) return false;
+  const names = (orig.match(/(?<=\s)\p{Lu}[\p{L}'’-]{3,}/gu) || []).map((w) => norm(w).slice(0, 4));
+  if (names.length >= 2) { const nt = norm(tr); const kept = names.filter((w) => nt.includes(w)).length; if (kept / names.length < 0.4) return false; }
+  return true;
+}
+async function translateEvent(ev) {
+  const lang = LANG;
+  if (ev.tx?.[lang]?.full) return;
+  const need = !!ev.titleEn;
+  const texts = [ev.title, ev.ctx || "", ...(ev.articles || []).slice(0, 8).map((a) => a.title || "")];
+  if (need && !ev.ctx && !(ev.articles || []).length) return;
+  ev.txBusy = true; if (S.sel === ev.id) renderCard(ev);
+  try {
+    const r = await translateMany(texts.map((t) => t || "-"), lang);
+    if (r.list) {
+      ev.tx = ev.tx || {};
+      let t0 = r.srcLang === lang || norm(r.list[0]) === norm(ev.title) ? null : r.list[0];
+      if (t0 && !translationFaithful(ev.title, t0)) { integrityWarn(ev, "çeviri orijinalden kopuk, reddedildi"); t0 = null; }
+      ev.tx[lang] = { ...(ev.tx[lang] || {}), title: need ? null : t0, ctx: ev.ctx ? r.list[1] : null, arts: r.list.slice(2), full: true };
+      TXKEEP.set(ev.id, ev.tx);
+    }
+  } catch {}
+  ev.txBusy = false;
+  if (S.sel === ev.id) renderCard(ev);
+  renderList();
+}
+/* ---------- Canlı yayın: bölge yayınları (YouTube), haberdeki video, 7/24 haber kanalları ---------- */
+const CHANNELS = [
+  { n: "Al Jazeera", id: "UCNye-wNBqNL5ZzHSJj3l8Bg" }, { n: "France 24", id: "UCQfwfsi5VrQ8yKZ-UWmAEFg" },
+  { n: "Sky News", id: "UCoMdktPbSTixAyNGwb-UYkQ" }, { n: "DW News", id: "UCknLrEdhRCp1aegoMqRaCZg" },
+];
+// YouTube'u anahtarsız aktaran herkese açık servisler (Piped, Invidious). Hepsi aynı anda denenir, ilk cevap veren kullanılır.
+const PIPED = ["pipedapi.kavin.rocks", "pipedapi.adminforge.de", "api.piped.private.coffee", "pipedapi.r4fo.com", "pipedapi.leptons.xyz"];
+const INV = ["inv.nadeko.net", "yewtu.be", "invidious.nerdvpn.de", "iv.ggtyler.dev", "invidious.f5.si", "inv.tux.pizza"];
+const LIVEC = new LRU(100);
+const placeName = (ev) => placeName0(ev) || ev.g?.en || (ev.place || "").split(",")[0] || "";
+async function viaPiped(inst, q) {
+  const j = await getJSON(`https://${inst}/search?filter=videos&q=${encodeURIComponent(q)}`, 9000);
+  if (!Array.isArray(j.items)) throw new Error("bad");
+  return j.items.filter((it) => it.duration === -1 || it.isLive).map((it) => {
+    const id = (it.url || "").split("v=")[1]?.split("&")[0];
+    return { id, title: it.title, ch: it.uploaderName, img: id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : it.thumbnail };
+  });
+}
+async function viaInvidious(inst, q) {
+  const j = await getJSON(`https://${inst}/api/v1/search?type=video&features=live&q=${encodeURIComponent(q)}`, 9000);
+  if (!Array.isArray(j)) throw new Error("bad");
+  return j.filter((it) => it.liveNow || it.isLive || it.lengthSeconds === 0)
+    .map((it) => ({ id: it.videoId, title: it.title, ch: it.author, img: `https://i.ytimg.com/vi/${it.videoId}/mqdefault.jpg` }));
+}
+const anyOk = (ps) => Promise.any(ps.map((p) => p.then((r) => (Array.isArray(r) ? r : Promise.reject()))));
+async function liveSearch(place) {
+  const c = LIVEC.get(place);
+  if (c && Date.now() - c.t < 10 * 60000) return c.list;
+  const qs = [`${place} live`, `${place} live cam`];
+  const res = await Promise.allSettled(qs.map((q) => anyOk([...PIPED.map((i) => viaPiped(i, q)), ...INV.map((i) => viaInvidious(i, q))])));
+  if (res.every((r) => r.status === "rejected")) throw new Error("down");
+  const seen = new Set();
+  const list = res.flatMap((r) => r.value || []).filter((v) => v.id && !seen.has(v.id) && seen.add(v.id)).slice(0, 8);
+  LIVEC.set(place, { t: Date.now(), list }); return list;
+}
+async function loadLive(ev) {
+  ev.lv = { busy: true }; if (S.sel === ev.id) renderCard(ev);
+  try { ev.lv = { list: await liveSearch(placeName(ev)) }; }
+  catch { ev.lv = { err: "fail" }; }
+  if (S.sel === ev.id) renderCard(ev);
+}
+function liveHTML(ev) {
+  let h = "";
+  if (ev.video) h += `<h3>${esc(T("lvVidT"))}</h3><button class="act" data-tv="hls" data-src="${esc(ev.video)}" data-t="${esc(titleOf(ev))}">${esc(T("lvVid"))}</button>`;
+  h += `<h3>${esc(T("lvTitle"))} · ${esc(placeName(ev))}</h3>`;
+  const lv = ev.lv || {};
+  if (lv.busy) h += `<span class="wait">${esc(T("lvSearching"))}</span>`;
+  else if (lv.err) h += `<p class="wait">${esc(T("lvFail"))}</p>`;
+  else if (lv.list && !lv.list.length) h += `<p class="wait">${esc(T("lvNone"))}</p>`;
+  else if (lv.list) h += `<div class="vids">${lv.list.map((v) => `<button class="vid" data-tv="yt" data-id="${esc(v.id)}" data-t="${esc(v.title)}">${v.img ? `<img src="${esc(v.img)}" alt="" loading="lazy">` : ""}<span>${esc(v.title)}<small>${esc(v.ch || "")}</small></span></button>`).join("")}</div>`;
+  h += `<h3>${esc(T("lvNews"))}</h3><div class="chans">${CHANNELS.map((c) => `<button class="act" data-tv="ch" data-id="${c.id}" data-t="${esc(c.n)}">${esc(c.n)}</button>`).join("")}</div>`;
+  return h;
+}
+$("card").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-tv]");
+  if (b) { openTV(b.dataset.tv, b.dataset.id || b.dataset.src, b.dataset.t); return; }
+});
+let hlsLib = null;
+async function openTV(kind, id, title) {
+  const box = $("tvBody"); box.innerHTML = "";
+  $("tvTitle").textContent = title || ""; $("tv").hidden = false;
+  let link = "";
+  if (kind === "yt") {
+    box.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+    link = "https://www.youtube.com/watch?v=" + encodeURIComponent(id);
+  } else if (kind === "ch") {
+    box.innerHTML = `<iframe src="https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(id)}&autoplay=1&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+    link = "https://www.youtube.com/channel/" + encodeURIComponent(id) + "/live";
+  } else {
+    const v = document.createElement("video"); v.controls = true; v.autoplay = true; v.playsInline = true; box.appendChild(v);
+    if (v.canPlayType("application/vnd.apple.mpegurl")) v.src = id;
+    else {
+      if (!hlsLib) hlsLib = new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"; sc.onload = () => res(window.Hls); sc.onerror = rej; document.head.appendChild(sc); });
+      try { const Hls = await hlsLib; const h = new Hls(); h.loadSource(id); h.attachMedia(v); } catch { v.src = id; }
+    }
+  }
+  $("tvOpen").hidden = !link; $("tvOpen").href = link || "#";
+}
+$("tvClose").addEventListener("click", () => { $("tvBody").innerHTML = ""; $("tv").hidden = true; });
+
+/* ---------- Daha fazla bilgi: Wikipedia arka planı + bölgedeki olaylar ---------- */
+function moreHTML(ev) {
+  const m = ev.more?.[LANG];
+  const near = [...S.events.values()].filter((o) => o.id !== ev.id && CATS[o.cat] &&
+    ((ev.g && o.g === ev.g) || (Math.abs(o.lat - ev.lat) < 3 && Math.abs(o.lon - ev.lon) < 3)))
+    .sort((a, b) => (b.aktif - a.aktif) || (b.time || 0) - (a.time || 0)).slice(0, 5);
+  let h = "";
+  // 1) Haberin kendisi: ilk paragraf giriş (büyük), devamı düzgün paragraflar
+  let paras = [];
+  if (ev.lead?.length) {
+    const L2 = ev.leadTx?.[LANG];
+    if (!L2) ensureLeadTx(ev);
+    paras = (L2 || ev.lead).map(cleanPara).filter((p) => p.length > 40);
+  }
+  if (!paras.length) { const d = cleanPara(ev.description || ev.ctx || ""); if (d.length > 60 && norm(d).slice(0, 50) !== norm(ev.title).slice(0, 50)) paras = [cutAt(d, 600)]; }
+  h += `<div class="sec"><h3>${esc(T("fromArticle"))}${ev.domain ? " · " + esc(ev.domain) : ""}</h3>`;
+  if (paras.length) h += `<p class="lede">${esc(paras[0])}</p>` + paras.slice(1).map((p) => `<p class="par">${esc(p)}</p>`).join("");
+  else h += `<span class="wait">${esc(deepable(ev) && !ev.deep ? "Reading the report…" : T("searching"))}</span>`;
+  h += `</div>`;
+  // 2) Aynı olayı veren diğer kaynaklar: her birinden haberin özünü taşıyan bir paragraf
+  if (ev.rel?.length) h += `<div class="sec"><h3>Other outlets report</h3>${ev.rel.map((r) => `<blockquote>${esc(r.text)}<cite><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.host)} ↗</a></cite></blockquote>`).join("")}</div>`;
+  else if (ev.relBusy) h += `<div class="sec"><h3>Other outlets report</h3><span class="wait">${esc(T("searching"))}</span></div>`;
+  // 3) Arka plan (Wikipedia)
+  h += `<div class="sec"><h3>${esc(T("bg"))}</h3>`;
+  if (!m) h += `<span class="wait">${esc(T("searching"))}</span>`;
+  else if (!m.length) h += `<p class="wait">${esc(T("noMore"))}</p>`;
+  else h += m.map((w) => `<div class="wk">${w.img ? `<img src="${esc(w.img)}" alt="">` : ""}<b>${esc(w.title)}</b><p>${esc(cutAt(w.text, 700))}</p><a href="${esc(w.url)}" target="_blank" rel="noopener">${esc(T("readWiki"))}</a></div>`).join("");
+  h += `</div>`;
+  if (near.length) h += `<div class="sec"><h3>${esc(T("nearby"))}</h3><ul>${near.map((o) => `<li><button data-go="${esc(o.id)}">${esc(titleOf(o))}<small>${esc(T(o.cat))} · ${esc(T(o.aktif ? "on" : "off"))} · ${esc(when(o))}</small></button></li>`).join("")}</ul></div>`;
+  const arts = ev.articles?.length ? ev.articles : ev.url ? [{ url: ev.url, title: ev.domain || ev.source }] : [];
+  if (arts.length) h += `<div class="sec"><h3>${esc(T("srcs"))}</h3><ul>${arts.slice(0, 10).map((a) => `<li><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(hostOf(a.url) || a.title)} ↗</a></li>`).join("")}</ul></div>`;
+  return h;
+}
+// Diğer kaynakların metninden, ana haberde olmayan en bilgilendirici paragraf (en fazla 2 kaynak)
+async function loadRelated(ev) {
+  if (ev.rel || ev.relBusy) return;
+  const mainHost = hostOf(ev.url || "");
+  const cands = (ev.articles || []).filter((a) => a.url && a.url !== ev.url && hostOf(a.url) !== mainHost && deepable({ url: a.url }))
+    .filter((a, i, arr) => arr.findIndex((b) => hostOf(b.url) === hostOf(a.url)) === i).slice(0, 2);
+  if (!cands.length) { ev.rel = []; return; }
+  ev.relBusy = true; if (S.sel === ev.id && ev.moreOpen) refreshMore(ev);
+  const have = simTokens((ev.lead || []).join(" ") + " " + ev.title), out = [];
+  for (const a of cands) {
+    try {
+      const ps = leadParas(await readArticle(a.url), 4);
+      const best = ps.find((p) => { const t = simTokens(p); let k = 0; for (const w of t) if (have.has(w)) k++; return t.size > 6 && k / t.size < 0.7; }) || ps[0];
+      if (best) out.push({ host: hostOf(a.url), url: a.url, text: cutAt(best, 520) });
+    } catch {}
+  }
+  ev.rel = out; ev.relBusy = false;
+  if (S.sel === ev.id && ev.moreOpen) refreshMore(ev);
+}
+// Yalnızca "daha fazla bilgi" kutusu yenilenir: kart yeniden çizilmez, okunan yer kaymaz
+function refreshMore(ev) { const box = $("more"); if (box && $("card").dataset.ev === ev.id) box.innerHTML = moreHTML(ev); }
+$("card").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-go]"); if (!b) return;
+  const o = S.events.get(b.dataset.go); if (o) select(o, true);
+});
+const GENERIC_T = /^(climate change|global warming|war|protest|demonstration|riot|election|terrorism|homicide|murder|shooting|police|military|government|politics|economy|inflation|earthquake|flood|wildfire|special report on global warming.*|united nations|european union|nato)$/i;
+const GENERIC_W = new Set("monday tuesday wednesday thursday friday saturday sunday january february march april may june july august september october november december reuters associated press afp the this that police officials government president minister".split(" "));
+const STOP = new Set("the a an of in on at to for and or with by from as is are was were be has have had its it this that over after amid says said new".split(" "));
+async function wikiSearch(q) {
+  const words = q.replace(/[^\p{L}\p{N}\s-]/gu, " ").split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w.toLowerCase())).slice(0, 9).join(" ");
+  const j = await getJSON("https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&formatversion=2&origin=*&srlimit=3&srsearch=" + encodeURIComponent(words), 10000);
+  return (j.query?.search || []).map((r) => r.title);
+}
+async function wikiSummary(title, lang) {
+  const enc = encodeURIComponent(title.replace(/ /g, "_"));
+  const en = await getJSON("https://en.wikipedia.org/api/rest_v1/page/summary/" + enc, 10000);
+  if (!en || en.type === "disambiguation" || !en.extract) return null;
+  let out = { title: en.title, text: en.extract, url: en.content_urls?.desktop?.page, img: en.thumbnail?.source };
+  return out;
+}
+async function loadMore(ev) {
+  const lang = LANG;
+  ev.more = ev.more || {};
+  ensureLeadTx(ev); loadRelated(ev);                            // [2.4] diğer kaynakların paragrafları
+  if (ev.more[lang]) return;
+  // Olaya özgü varlıklar: başlık ve haber metnindeki özel adlar (kişi, kurum, yer, olay)
+  const ents = new Set((ev.title + " " + (ev.lead || []).join(" ")).match(/\b\p{Lu}[\p{L}'’-]{3,}/gu)?.map((w) => norm(w)).filter((w) => !STOP.has(w) && !GENERIC_W.has(w)) || []);
+  const specific = (t) => !/^(list of|timeline of|outline of|index of)/i.test(t) && !GENERIC_T.test(t) && !isCountryTitle(t);
+  let titles = (ev.links || []).filter((t) => !GAZ.some((g) => norm(g.en) === norm(t) || norm(g.ad) === norm(t))).filter(specific).slice(0, 4);
+  if (titles.length < 2 && ents.size) {
+    try {
+      const found = await wikiSearch([...ents].slice(0, 6).join(" "));
+      titles = [...titles, ...found.filter(specific).filter((t) => norm(t).split(/\s+/).some((w) => ents.has(w)))];
+    } catch {}
+  }
+  const out = [], seen = new Set();
+  for (const t of titles) {
+    if (out.length >= 2) break;
+    try { const s = await wikiSummary(t, lang); if (s && !seen.has(s.title)) { seen.add(s.title); out.push(s); } } catch {}
+  }
+  ev.more[lang] = out;
+  if (S.sel === ev.id && ev.moreOpen && LANG === lang) refreshMore(ev);
+}
+function select(ev, fly) {
+  S.sel = ev.id;
+  selMark.position = Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 50); selMark.show = true;
+  renderCard(ev); translateEvent(ev); enqueueGeo(ev, true); showLinks(ev);
+  (async () => { try { await refineOne(ev); } catch {} try { await deepLocate(ev); } catch {} })();
+  if (PANEL.hidden) setPanel(true); else renderList();
+  placeCard(); syncZoomBtn();
+  requestAnimationFrame(() => $("list").querySelector(`li[data-li="${CSS.escape(ev.id)}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+  scene.requestRender();
+}
+
+/* ---------- Hedefleme sistemi (Yaklaştır) ---------- */
+function dms(lat, lon) {
+  const f = (v, p, n) => { const t = Math.round(Math.abs(v) * 3600), d = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;   // [2.3] 59.6" → 60" hatası yok
+    return `${String(d).padStart(p, "0")}°${String(m).padStart(2, "0")}'${String(s).padStart(2, "0")}"${n}`; };
+  return `${f(lat, 2, lat >= 0 ? T("N") : T("S"))} ${f(lon, 3, lon >= 0 ? T("E") : T("W"))}`;
+}
+let mission = 0, hudEv = null;
+const hud = $("hud"), hudRead = $("hudRead"), prog = [...$("hudProg").children];
+function readout() {
+  if (hud.hidden || !hudEv) return;
+  const h = viewer.camera.positionCartographic.height;
+  const alt = h > 10000 ? `${Math.round(h / 1000).toLocaleString(loc())} km` : `${Math.round(h).toLocaleString(loc())} m`;
+  hudRead.textContent = `${T("alt")} ${alt}   ·   ${dms(hudEv.lat, hudEv.lon)}`;
+}
+scene.postRender.addEventListener(readout);
+const flyP = (o) => new Promise((res) => viewer.camera.flyTo({ ...o, complete: () => res(true), cancel: () => res(false) }));
+const flySphereP = (bs, o) => new Promise((res) => viewer.camera.flyToBoundingSphere(bs, { ...o, complete: () => res(true), cancel: () => res(false) }));
+function step(i, dur) { prog.forEach((p, j) => { p.style.setProperty("--d", dur + "s"); p.classList.toggle("f", j <= i); }); }
+// [2.3] İlerleme çubuğu kamera uçuşuyla aynı süreyi paylaşır: 3 adım eşit dilimlerde, görev değişirse zamanlayıcılar iptal edilir
+let progT = [];
+function progFor(totalSec, run) {
+  progT.forEach(clearTimeout); progT = [];
+  const d = totalSec / 3;
+  step(0, d);
+  progT.push(setTimeout(() => run === mission && step(1, d), d * 1000), setTimeout(() => run === mission && step(2, d), 2 * d * 1000));
+}
+
+// [2.4] Olayın TAM yeri: haber metni okunur (tarih satırı, mekân, kurum), sonuç beklenir; ülke ya da başkent kadrajı yok, her zaman binalara inilir.
+async function sharpen(ev) {
+  if (ev.prec === "exact" || ev.prec === "inst" || ev.prec === "city" || !ev.g) return;
+  const ctry = countryOf(ev.g); if (!ctry) return;
+  const text = ev.title + " " + (ev.ctx || "") + " " + (ev.lead || []).slice(0, 2).join(" ");
+  const inst = await institution(ctry, topicOf(text, ev.cat));
+  if (inst && !inst.city) applyRef(ev, { lat: inst.lat, lon: inst.lon, prec: "inst", spot: inst.name, why: [["inst", inst.name]] });
+  else if (inst && ev.prec === "country") applyRef(ev, { lat: inst.lat, lon: inst.lon, prec: "capital", spot: `${inst.name}, ${ctry.en}`, why: [["capital", inst.name]] });
+}
+async function pinpoint(ev, run) {
+  zBusy = ev.id; syncZoomBtn();
+  $("hudCoord").textContent = "Reading the report · locating the exact site";
+  try { await Promise.race([(async () => { try { await refineOne(ev); } catch {} try { await deepLocate(ev); } catch {} await sharpen(ev); })(), sleep(24000)]); } catch {}
+  if (zBusy === ev.id) { zBusy = ""; syncZoomBtn(); }
+  if (run === mission) { $("hudName").textContent = placeName0(ev) || $("hudName").textContent; $("hudCoord").textContent = dms(ev.lat, ev.lon); }
+}
+const siteRange = (ev) => (ev.prec === "exact" || ev.prec === "inst") ? 420 : (ev.prec === "city" || ev.prec === "capital") ? 1400 : 2600;
+async function flySite(ev, dur, apex, run) {
+  const ground = await groundAt(ev.lat, ev.lon); if (run !== mission) return false;
+  groundRef = ground || 0;
+  const range = siteRange(ev);
+  const bs = new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, (ground || 0) + 40), 150);
+  const o = { offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(range <= 420 ? -38 : -32), range), duration: dur, easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT };
+  if (apex) o.maximumHeight = apex;
+  ev._flown = { lat: ev.lat, lon: ev.lon };
+  loadTiles();
+  return flySphereP(bs, o);
+}
+async function engage(ev) {
+  const run = ++mission; hudEv = ev;
+  const k = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0.35 : 1;
+  const name = placeName0(ev) || ev.g?.en || ev.place?.split(",")[0] || T(ev.cat);
+  $("hudKick").textContent = `${T(ev.cat)} · ${T(ev.aktif ? "onL" : "offL").replace(/^[●○]\s*/, "")}`;
+  $("hudName").textContent = name;
+  $("hudCoord").textContent = dms(ev.lat, ev.lon);
+  prog.forEach((p) => p.classList.remove("f"));
+  progT.forEach(clearTimeout); progT = [];
+  document.body.classList.add("engaged"); document.body.classList.remove("arrived");
+  if (S.sel !== ev.id) select(ev); else { syncZoomBtn(); placeCard(); }
+  if (matchMedia("(max-width:760px)").matches && !PANEL.hidden) setPanel(false);   // telefonda olay yeri görünsün; panel NEWS ile geri açılır
+  hud.hidden = false; hud.classList.remove("arrived", "go");
+  requestAnimationFrame(() => hud.classList.add("on", "go"));
+  loadTiles();                                                    // 3D binalar yolda yüklenmeye başlar
+  const pin = pinpoint(ev, run);
+  const top = { heading: 0, pitch: -Math.PI / 2, roll: 0 }, ease = Cesium.EasingFunction.QUADRATIC_IN_OUT;
+  const camH = viewer.camera.positionCartographic.height;
+  if (camH >= 3000000) {
+    // Uzaktan: önce olayın üstüne gelinir (bu sırada haber okunur), sonra tam yere inilir
+    step(0, 2.0 * k);
+    await flyP({ destination: Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, Math.min(camH, 8500000)), orientation: top, duration: 2.0 * k, easingFunction: ease });
+    if (run !== mission) return;
+    await pin; if (run !== mission) return;
+    step(1, 2.2 * k);
+    await flyP({ destination: Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 220000), orientation: top, duration: 2.2 * k, easingFunction: ease });
+    if (run !== mission) return;
+    step(2, 2.8 * k);
+    await flySite(ev, 2.8 * k, undefined, run);
+  } else {
+    // Zaten yakındayız: yer kesinleşince dünyaya çıkmadan, mesafe kadar yükselip doğrudan süzül
+    step(0, 1.2);
+    await pin; if (run !== mission) return;
+    const here = lookPoint() || { lat: Cesium.Math.toDegrees(viewer.camera.positionCartographic.latitude), lon: Cesium.Math.toDegrees(viewer.camera.positionCartographic.longitude) };
+    const d = km(here, ev), dur = Math.min(5.5, Math.max(2.6, 2.2 + d / 700)) * k, apex = Math.min(1600000, Math.max(4000, d * 1000 * 0.38));
+    progFor(dur, run);
+    await flySite(ev, dur, apex, run);
+  }
+  if (run !== mission) return;
+  hud.classList.add("arrived"); document.body.classList.add("arrived");
+  if (ev._flown && km(ev._flown, ev) > 0.15) await flySite(ev, 2.2 * k, undefined, run);   // uçuş sırasında yer kesinleştiyse
+}
+async function disengage() {
+  const run = ++mission, ev = hudEv;
+  progT.forEach(clearTimeout); progT = []; zBusy = "";                     // [2.3] yarım kalan ilerleme zamanlayıcıları iptal
+  nearCovered = false; scene.globe.show = true; scene.requestRender();   // [2.3] ZOOM OUT anında dünya görünür (boş ekran yok)
+  // ZOOM OUT anında arayüz normale döner; kamera arkada geri çekilir
+  hud.classList.remove("on", "arrived", "go"); hud.hidden = true; hudEv = null;
+  document.body.classList.remove("arrived", "engaged"); syncZoomBtn(); placeCard(); syncHudOut();
+  await flyP({ destination: Cesium.Cartesian3.fromDegrees(ev ? ev.lon : 35, ev ? ev.lat : 30, 15000000), duration: 2.2, easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT });
+}
+$("hudOut").addEventListener("click", disengage);
+
+
+
+/* ---------- Görünürlük: dünyanın arka yüzü gizli, liste yalnızca ekrandaki bölgeyi gösterir ---------- */
+const scratch2 = new Cesium.Cartesian2();
+function computeVis(withList = true) {
+  const occ = new Cesium.EllipsoidalOccluder(Cesium.Ellipsoid.WGS84, viewer.camera.positionWC);
+  const w = scene.canvas.clientWidth, h = scene.canvas.clientHeight;
+  for (const ev of S.events.values()) {
+    const p = Cesium.Cartesian3.fromDegrees(ev.lon, ev.lat, 0);
+    const vis = occ.isPointVisible(p);
+    let inView = false;
+    if (vis) { const c = scene.cartesianToCanvasCoordinates(p, scratch2); inView = !!c && c.x >= 0 && c.y >= 0 && c.x <= w && c.y <= h; }
+    ev.vis = vis; ev.inView = inView;
+    const on = vis && matches(ev), e = S.ents.get(ev.id);
+    if (e) e.show = vis;
+    for (const x of [...(ev.ring || []), ev.halo].filter(Boolean)) x.show = on;
+  }
+  if (withList) renderList();
+  scene.requestRender();
+}
+let visT = 0;
+viewer.camera.changed.addEventListener(() => { clearTimeout(visT); visT = setTimeout(() => computeVis(false), 300); });   // [2.3] 150 → 300 ms
+viewer.camera.moveEnd.addEventListener(() => computeVis(false));
+
+/* ---------- Dokunma: iç içe noktalarda seçim listesi ---------- */
+const picker = document.createElement("div"); picker.id = "picker"; picker.hidden = true; document.body.appendChild(picker);
+function showPicker(pos, evs) {
+  picker.innerHTML = `<div class="pk-h">${esc(T("nEv", evs.length))}</div>` + evs.map((ev) =>
+    `<button data-pk="${esc(ev.id)}" style="--c:${CATS[ev.cat]}"><i></i><span>${esc(titleOf(ev))}<small>${esc(T(ev.cat))} · ${esc(when(ev))}</small></span></button>`).join("");
+  picker.hidden = false;
+  const r = scene.canvas.getBoundingClientRect(), W = picker.offsetWidth, H = picker.offsetHeight;
+  picker.style.left = Math.max(8, Math.min(r.left + pos.x + 12, innerWidth - W - 8)) + "px";
+  picker.style.top = Math.max(8, Math.min(r.top + pos.y + 12, innerHeight - H - 8)) + "px";
+}
+picker.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-pk]"); if (!b) return;
+  const ev = S.events.get(b.dataset.pk); picker.hidden = true; if (ev) select(ev, false);
+});
+const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+handler.setInputAction((click) => {
+  picker.hidden = true;
+  let picks = [];
+  try { picks = scene.drillPick(click.position, 25, 26, 26); } catch { const p = scene.pick(click.position); if (p) picks = [p]; }
+  const seen = new Set(), evs = [];
+  for (const p of picks) { const ev = p?.id?.ev; if (ev && matches(ev) && ev.vis !== false && !seen.has(ev.id)) { seen.add(ev.id); evs.push(ev); } }
+  evs.sort((a, b) => sortKey(b) - sortKey(a));
+  if (evs.length === 1) select(evs[0], false);
+  else if (evs.length > 1) showPicker(click.position, evs);
+}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+/* ---------- Sherlock panosu: olay yeri + bağlantılı yerler, kırmızı raptiye ve iplerle ---------- */
+const YARN = new Cesium.PolylineOutlineMaterialProperty({ color: new Cesium.Color(0.88, 0.1, 0.14, 0.95), outlineColor: new Cesium.Color(0.3, 0.02, 0.04, 0.9), outlineWidth: 1 });
+let linkEnts = [], linkRun = 0;
+function clearLinks() { linkRun++; for (const e of linkEnts) viewer.entities.remove(e); linkEnts = []; scene.requestRender(); }
+function addDot(pt, label) {
+  linkEnts.push(viewer.entities.add({ position: Cesium.Cartesian3.fromDegrees(pt.lon, pt.lat, 30),
+    point: { pixelSize: 9, color: new Cesium.Color(0.9, 0.12, 0.16, 1), outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+    label: { text: String(label || "").toLocaleUpperCase("en-GB"), font: "600 11px Archivo, sans-serif",
+      fillColor: Cesium.Color.WHITE, showBackground: true, backgroundColor: new Cesium.Color(0.04, 0.06, 0.08, 0.78), backgroundPadding: new Cesium.Cartesian2(6, 4),
+      horizontalOrigin: Cesium.HorizontalOrigin.LEFT, verticalOrigin: Cesium.VerticalOrigin.CENTER, pixelOffset: new Cesium.Cartesian2(10, 0),
+      disableDepthTestDistance: Number.POSITIVE_INFINITY } }));
+}
+function addYarn(a, b) {
+  const geo = new Cesium.EllipsoidGeodesic(Cesium.Cartographic.fromDegrees(a.lon, a.lat), Cesium.Cartographic.fromDegrees(b.lon, b.lat));
+  const d = geo.surfaceDistance, H = Math.min(450000, Math.max(250, d * 0.18)), pts = [];
+  for (let i = 0; i <= 48; i++) { const t = i / 48, c = geo.interpolateUsingFraction(t); pts.push(Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, 40 + H * Math.sin(Math.PI * t))); }
+  linkEnts.push(viewer.entities.add({ polyline: { positions: pts, width: 3, material: YARN, arcType: Cesium.ArcType.NONE } }));
+}
+function relatedPlaces(ev) {
+  const text = ev.title + " " + (ev.ctx || ""), n = norm(text), main = { lat: ev.lat, lon: ev.lon };
+  const mainC = nearestCountry(main), ms = [];
+  for (const g of GAZ) { const m = g.re.exec(n); if (m) ms.push({ g, i: m.index }); }
+  const us = /\bU\.?S\.?A?\b/.exec(text), abd = GAZ.find((g) => g.ad === "ABD");          // "US envoy" (küçük harfli "us" zamiriyle karışmasın)
+  if (us && !ms.some((x) => x.g === abd)) ms.push({ g: abd, i: us.index });
+  ms.sort((a, b) => a.i - b.i);
+  const out = [], seen = new Set();
+  for (const { g } of ms) {
+    if (out.length >= 6) break;
+    const ctry = countryOf(g);
+    if (seen.has(ctry.ad + (g.country ? "" : g.ad))) continue;
+    if (g.country && (g === mainC || g === ev.g)) continue;                                    // olayın kendi ülkesi
+    if (g.country && ms.some((x) => !x.g.country && countryOf(x.g) === g)) continue;           // o ülkenin şehri zaten var
+    if (!g.country && km(g, main) < 5) continue;                                              // olay yerinin kendisi
+    seen.add(ctry.ad + (g.country ? "" : g.ad)); out.push(g);
+  }
+  return out;
+}
+async function showLinks(ev) {
+  clearLinks(); const run = linkRun;
+  const main = { lat: ev.lat, lon: ev.lon }, related = relatedPlaces(ev);
+  if (!related.length) return;                       // tek yerlik olay: ip yok
+  const text = ev.title + " " + (ev.ctx || ""), tp = topicOf(text, ev.cat);
+  const linkTopic = ["foreign", "defense", "embassy", "presidency"].includes(tp) ? (tp === "embassy" ? "foreign" : tp) : "government";
+  for (const g of related) {
+    let pt, name;
+    if (!g.country && !(METO.has(g.ad) && (() => { const n = norm(text), m = g.re.exec(n); return m && isMetonym(n, m.index, m[0].length); })())) {
+      pt = g; name = g.en;
+    } else {
+      const inst = await institution(countryOf(g), linkTopic); if (run !== linkRun) return;
+      if (!inst) continue; pt = inst; name = inst.city ? countryOf(g).en : inst.name;
+    }
+    if (km(pt, main) < 1) continue;
+    addYarn(main, pt); addDot(pt, name); scene.requestRender();
+  }
+}
+
+/* ---------- Kaynaklar ---------- */
+const GDACS_T = { tr: { TC: "Tropik fırtına", FL: "Sel", VO: "Yanardağ", DR: "Kuraklık", WF: "Orman yangını" },
+                  en: { TC: "Tropical cyclone", FL: "Flood", VO: "Volcano", DR: "Drought", WF: "Wildfire" } };
+async function loadGDACS() {
+  const d = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+  const base = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/";
+  const urls = [base + "SEARCH?eventlist=TC;FL;VO;DR;WF&alertlevel=Orange;Red&fromDate=" + d(30) + "&toDate=" + d(-1), base + "EVENTS4APP", base + "MAP?eventtypes=TC,FL,VO,DR,WF"];
+  let j = null, last;
+  for (const u of urls) { try { j = await getJSON(u); if (j && j.features) break; } catch (e) { last = e; } }
+  if (!j || !j.features) throw last || new Error(T("nodata"));
+  return j.features.filter((f) => f.geometry?.type === "Point" && f.properties?.eventtype !== "EQ" && f.properties?.alertlevel !== "Green").map((f) => {
+    const p = f.properties, [lon, lat] = f.geometry.coordinates, nm = p.name || p.description || "";
+    const active = String(p.iscurrent).toLowerCase() === "true" || (Date.parse(p.todate) || 0) > Date.now() - 2 * 864e5;
+    return { id: "a:" + p.eventtype + p.eventid, cat: "afet", title: `${GDACS_T.en[p.eventtype] || "Disaster"}: ${nm}`, titleTr: `${GDACS_T.tr[p.eventtype] || "Afet"}: ${nm}`,
+      place: p.country, time: Math.min(Date.now(), Math.max(Date.parse(p.fromdate) || 0, Date.parse(p.datemodified) || 0, Math.min(Date.parse(p.todate) || 0, Date.now()))) || null, lat, lon, url: p.url?.report, alertLv: p.alertlevel, active, prec: "exact", source: "GDACS" };
+  });
+}
+const EONET_TR = { wildfires: "Orman yangını", severeStorms: "Şiddetli fırtına", volcanoes: "Yanardağ", floods: "Sel", landslides: "Heyelan",
+  earthquakes: "Deprem", drought: "Kuraklık", dustHaze: "Toz/duman", snow: "Kar", tempExtremes: "Aşırı sıcaklık", manmade: "İnsan kaynaklı" };
+async function loadEONET() {
+  const j = await getJSON("https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=14");
+  const out = [];
+  for (const e of j.events || []) {
+    const pts = (e.geometry || []).filter((g) => g.type === "Point"); if (!pts.length) continue;
+    const g = pts[pts.length - 1], [lon, lat] = g.coordinates, c = e.categories?.[0]?.id;
+    if (c === "seaLakeIce" || c === "snow") continue;
+    out.push({ id: "e:" + e.id, cat: "afet", title: e.title, titleTr: `${EONET_TR[c] || "Doğal olay"}: ${e.title}`, place: "",
+      time: Date.parse(g.date) || null, lat, lon, url: e.sources?.[0]?.url || e.link, active: true, prec: "exact", source: "NASA EONET" });
+  }
+  return out;
+}
+
+
+const WIKI_CAT = [[/armed conflict|attack/i, "catisma"], [/politic|election|international relation/i, "siyaset"], [/disaster|accident/i, "afet"]];
+const wikiName = (d) => `Portal:Current_events/${d.getUTCFullYear()}_${d.toLocaleString("en-US", { month: "long", timeZone: "UTC" })}_${d.getUTCDate()}`;
+let wikiRev = null;
+async function watchWiki() {
+  try {
+    const j = await getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&prop=revisions&rvprop=ids&titles=" + encodeURIComponent(wikiName(new Date())), 10000);
+    const r = j.query?.pages?.[0]?.revisions?.[0]?.revid;
+    if (r && r !== wikiRev) { const first = wikiRev === null; wikiRev = r; if (!first) run("wiki", loadWiki); }
+    S.src.wiki.t = new Date(); renderSrcs();
+  } catch {}
+}
+function* ancestorsLi(li) { let p = li.parentElement?.closest("li"); const a = []; while (p) { a.unshift(p); p = p.parentElement?.closest("li"); } yield* a; }
+function firstLine(li) { const c = li.cloneNode(true); c.querySelectorAll("ul").forEach((u) => u.remove()); return c.textContent.trim(); }
+async function wikiDay(d) {
+  const name = wikiName(d);
+  const j = await getJSON("https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=text&formatversion=2&origin=*&page=" + encodeURIComponent(name));
+  if (!j.parse) return [];
+  const doc = new DOMParser().parseFromString(j.parse.text, "text/html");
+  const root = doc.querySelector(".current-events-content") || doc.querySelector(".description") || doc.body;
+  const day = Math.min(Date.now(), Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12));   // gün ortası: dünkü olaylar bugün öğlen 24 saati doldurup düşer
+  const out = []; let cat = "diger";
+  for (const el of root.querySelectorAll("p, ul, .current-events-content-heading, [role='heading']")) {
+    if (el.tagName !== "UL") { const h = el.textContent.trim(); cat = (WIKI_CAT.find(([re]) => re.test(h)) || [0, "diger"])[1]; continue; }
+    if (el.parentElement?.closest("ul")) continue;
+    for (const li of el.querySelectorAll("li")) {
+      if (li.querySelector("ul")) continue;
+      const ctx = [...ancestorsLi(li)].map((x) => firstLine(x)).join(" — ");
+      const text = li.textContent.replace(/\s*\((?:[^()]*)\)\s*$/, "").trim();
+      if (text.length < 25) continue;
+      const g = geocode(text, ctx); if (!g) continue;
+      const toT = (a) => decodeURIComponent((a.getAttribute("href") || "").replace(/^(\/wiki\/|\.\/)/, "").split("#")[0]).replace(/_/g, " ");
+      const own = [...new Set([...li.querySelectorAll('a[href^="/wiki/"], a[href^="./"]')].map(toT).filter((t) => t && !t.includes(":")))];
+      const ctxL = [...new Set([...ancestorsLi(li)].flatMap((x) => [...x.querySelectorAll(':scope > a[href^="/wiki/"], :scope > a[href^="./"], :scope > b > a')]).map(toT).filter((t) => t && !t.includes(":")))];
+      const links = [...own, ...ctxL];
+      const tc = classify(text + " " + ctx), ecat = tc === "protesto" || cat === "diger" ? tc : cat;
+      const src = li.querySelector("a.external, a[rel~='nofollow']");
+      const id = "w:" + hash(text), [dy, dx] = jitter(id, g.country ? 1.0 : 0.1);
+      out.push({ id, cat: ecat, g, ctx, own, ctxL, prec: g.country ? "country" : "city", links: [...new Set(links)].reverse(), title: text,
+        time: day, day: true, lat: g.lat + dy, lon: g.lon + dx, url: src?.href || "https://en.wikipedia.org/wiki/" + name, domain: "Wikipedia", source: "Wikipedia" });
+    }
+  }
+  return out;
+}
+async function loadWiki() {
+  const [a, b] = await Promise.allSettled([wikiDay(new Date()), wikiDay(new Date(Date.now() - 864e5))]);
+  const list = [...(a.value || []), ...(b.value || [])];
+  if (!list.length && a.status === "rejected") throw a.reason;
+  await refineWikiBatch(list);
+  return list;
+}
+
+async function run(key, fn) {
+  if (S.src[key].durum !== "ok") { S.src[key].durum = "busy"; S.src[key].msg = ""; renderSrcs(); }
+  try {
+    const list = await fn();
+    const prev = S.seen[key], now = Date.now();
+    if (prev) {
+      const fresh = list.filter((e) => !prev.has(e.id) && CATS[e.cat]).sort((a, b) => (b.time || 0) - (a.time || 0));
+      for (const e of fresh) S.fresh.set(e.id, now + 15 * 60000);
+      if (fresh.length) toast(T("newEv", T(fresh[0].cat), titleOf(fresh[0]).slice(0, 90)) + (fresh.length > 1 ? `  (+${fresh.length - 1})` : ""), 7000);
+    }
+    S.seen[key] = new Set(list.map((e) => e.id));
+    replaceSource(key, list);
+    Object.assign(S.src[key], { durum: "ok", n: list.length, msg: "", t: new Date() });
+  } catch (e) {
+    Object.assign(S.src[key], { durum: "err", msg: why(e) });
+  }
+  renderSrcs();
+  $("upd").textContent = T("updated") + " " + hhmm();
+}
+/* ---------- Haber ajansları (Bluesky, dakikada bir) ---------- */
+const AGENCIES = ["factal.com", "reuters.com", "apnews.com", "en.afp.com", "news.sky.com", "theguardian.com",
+  "nytimes.com", "cnn.com", "nbcnews.com", "cbsnews.com", "washingtonpost.com", "bloomberg.com"];
+const BS = new Map(); let bsI = 0;
+const BSK = new Map();
+async function loadAgency() {
+  const h = AGENCIES[bsI++ % AGENCIES.length], first = !BS.has(h);
+  try {
+    const j = await getJSON(`https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(h)}&limit=40&filter=posts_no_replies`, 10000);
+    const items = [];
+    for (const it of j.feed || []) {
+      if (it.reason) continue;
+      if (BSK.has(it.post?.uri)) { const k = BSK.get(it.post.uri); if (k && Date.now() - k.time < MAX_AGE) items.push(k); continue; }   // [2.4] bilinen gönderi yeniden işlenmez
+      BSK.set(it.post?.uri, null);
+      const p = it.post, r = p.record || {}, ex = p.embed?.external || p.embed?.media?.external;
+      const vid = /video/.test(p.embed?.$type || "") ? p.embed : /video/.test(p.embed?.media?.$type || "") ? p.embed.media : null;
+      const title = (ex?.title || r.text || "").split("\n")[0].trim(); if (title.length < 20) continue;
+      const time = Date.parse(r.createdAt || p.indexedAt); if (!time || Date.now() - time > MAX_AGE) continue;
+      const extra = (r.text || "") + " " + (ex?.description || "");
+      const cat = classify(title + " " + extra); if (cat === "diger") continue;
+      const g = geocode(title, extra); if (!g) continue;
+      const id = "b:" + p.uri, [dy, dx] = jitter(id, g.country ? 1.2 : 0.12);
+      const em = p.embed || {}, md = em.media || {};
+      const imgs = [...(em.images || []), ...(md.images || [])].map((x) => ({ src: x.fullsize || x.thumb, cap: x.alt || "" }))
+        .concat([ex?.thumb].filter(Boolean).map((u) => ({ src: u, cap: "" }))).filter((x) => x.src).slice(0, 4);
+      const item = { id, cat, g, imgs, prec: g.country ? "country" : "city", title, description: ex?.title && r.text ? r.text : (ex?.description || ""), time, video: vid?.playlist || null, lat: g.lat + dy, lon: g.lon + dx,
+        url: ex?.uri || `https://bsky.app/profile/${p.author.handle}/post/${p.uri.split("/").pop()}`, domain: p.author.displayName || h, source: "Bluesky" };
+      BSK.set(p.uri, item); items.push(item);
+    }
+    if (BSK.size > 3000) [...BSK.keys()].slice(0, 1000).forEach((k) => BSK.delete(k));
+    BS.set(h, items);
+    if (first && S.seen.bsky) items.forEach((e) => S.seen.bsky.add(e.id));   // ilk yüklemede "yeni" bildirimi yağdırma
+  } catch (e) { if (!BS.size) throw e; }
+  for (const [k, v] of BS) BS.set(k, v.filter((e) => !e.time || Date.now() - e.time < MAX_AGE));   // [2.3] bellek şişmesi yok
+  return [...BS.values()].flat();
+}
+/* ---------- RSS akışları (CORS vekili üzerinden, 5 dk'da bir) ---------- */
+// Dünya haberleri + konuya göre son 24 saat taraması (Google News: protesto, saldırı, afet, siyasi kriz — her ülkeden)
+const GN = (q, hl = "en-US", gl = "US", ceid = "US:en") => `https://news.google.com/rss/search?q=${encodeURIComponent(q + " when:1d")}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
+const RSS_FEEDS = [
+  { n: "Reuters", u: "https://feeds.reuters.com/reuters/topNews" },
+  { n: "AP", u: "https://apnews.com/apf-topnews.rss" },
+  { n: "AP Top News", u: "https://apnews.com/hub/ap-top-news?format=rss" },
+  { n: "Euronews", u: "https://www.euronews.com/rss" },
+  { n: "NPR News", u: "https://feeds.npr.org/1001/rss.xml" },
+  { n: "CBC World", u: "https://www.cbc.ca/webfeed/rss/rss-world" },
+  { n: "CNN World", u: "http://rss.cnn.com/rss/edition_world.rss" },
+  { n: "DW (all)", u: "https://rss.dw.com/rdf/rss-en-all" },
+  { n: "Anadolu Ajansı", u: "https://www.aa.com.tr/tr/rss/default?cat=guncel", lang: "tr" },
+  { n: "tagesschau", u: "https://www.tagesschau.de/xml/rss2", lang: "de" },
+  { n: "Le Monde", u: "https://www.lemonde.fr/rss/une.xml", lang: "fr" },
+  { n: "BBC World", u: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+  { n: "Al Jazeera", u: "https://www.aljazeera.com/xml/rss/all.xml" },
+  { n: "NPR", u: "https://feeds.npr.org/1004/rss.xml" },
+  { n: "The Guardian", u: "https://www.theguardian.com/world/rss" },
+  { n: "France 24", u: "https://www.france24.com/en/rss" },
+  { n: "DW", u: "https://rss.dw.com/rdf/rss-en-world" },
+  { n: "Sky News", u: "https://feeds.skynews.com/feeds/rss/world.xml" },
+  { n: "UN News", u: "https://news.un.org/feed/subscribe/en/news/all/rss.xml" },
+  { n: "Anadolu", u: "https://www.aa.com.tr/en/rss/default?cat=world" },
+  { n: "Google News · protests", u: GN("protest OR protesters OR demonstrators OR rally OR march OR \"general strike\"") },
+  { n: "Google News · clashes", u: GN("airstrike OR shelling OR clashes OR \"drone attack\" OR gunmen OR bombing") },
+  { n: "Google News · disasters", u: GN("earthquake OR flood OR wildfire OR explosion OR landslide OR cyclone") },
+  { n: "Google News · politics", u: GN("parliament OR election OR \"prime minister\" OR president OR sanctions OR resigns") },
+  { n: "Google Haberler · eylem", u: GN("protesto OR eylem OR miting OR yürüyüş OR grev", "tr", "TR", "TR:tr") },
+];
+const PROXIES = [(u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u), (u) => "https://corsproxy.io/?url=" + encodeURIComponent(u)];
+async function getText(url, ms = 15000) {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  try { const r = await fetch(url, { signal: c.signal }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.text(); }
+  finally { clearTimeout(t); }
+}
+const RSSC = new Map();   // akış → son başarılı öğeler (bir akış geçici düşerse öncekiler kalır)
+const stripHtml = (h) => { const d = document.createElement("div"); d.innerHTML = h || ""; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+async function loadRSS() {
+  const seenTitles = new Set([...S.events.values()].filter((e) => e.src !== "rss").map((e) => norm(e.title).slice(0, 60)));
+  let ok = 0;
+  for (const f of RSS_FEEDS) {
+    let xml = "";
+    for (const px of PROXIES) { try { xml = await getText(px(f.u)); if (/<(rss|feed|rdf)/i.test(xml)) break; xml = ""; } catch {} }
+    if (!xml) continue;
+    const doc = new DOMParser().parseFromString(xml, "text/xml"), items = [], raw = [];
+    for (const it of [...doc.querySelectorAll("item, entry")].slice(0, 40)) {
+      const q = (sel) => it.querySelector(sel)?.textContent?.trim() || "";
+      const title = stripHtml(q("title")).replace(/\s+[-–|]\s+[^-–|]{2,40}$/, ""); if (title.length < 20) continue;
+      const rawD = q("description") || q("summary") || q("content");
+      const desc = stripHtml(rawD).slice(0, 600);
+      const imgs = [...it.getElementsByTagNameNS("*", "content"), ...it.getElementsByTagNameNS("*", "thumbnail"), ...it.querySelectorAll("enclosure")]
+        .filter((m) => /image|jpe?g|png|webp/i.test((m.getAttribute("type") || m.getAttribute("medium") || "") + (m.getAttribute("url") || "")))
+        .map((m) => m.getAttribute("url")).concat([(/<img[^>]+src=["']([^"']+)/i.exec(rawD) || [])[1]]).filter((u) => u && /^https?:/.test(u))
+        .filter((u, i, a) => a.indexOf(u) === i).slice(0, 3).map((u) => ({ src: u, cap: "" }));
+      const link = q("link") || it.querySelector("link")?.getAttribute("href") || "";
+      const time = Date.parse(q("pubDate") || q("published") || q("updated") || q("dc\\:date") || it.getElementsByTagNameNS("*", "date")[0]?.textContent) || null;
+      if (time && Date.now() - time > MAX_AGE) continue;
+      raw.push({ title, desc, imgs, link, time });
+    }
+    if (f.lang && raw.length) {                                              // Türkçe/Almanca/Fransızca başlıklar: sınıflandırma için İngilizceye
+      try { const r = await translateMany(raw.flatMap((x) => [x.title, x.desc.slice(0, 300) || "-"]), "en");
+        raw.forEach((x, i) => { x.orig = x.title; x.title = r.list[2 * i] || x.title; x.desc = r.list[2 * i + 1] === "-" ? "" : (r.list[2 * i + 1] || x.desc); }); } catch {}
+    }
+    let yi = 0;
+    for (const { title, desc, imgs, link, time, orig } of raw) {
+      if (++yi % 8 === 0) await yieldUI();                               // [2.4] uzun işlem parçalara bölünür: dokunuşlar beklemez
+      if (seenTitles.has(norm(title).slice(0, 60))) continue;            // başka kaynaktan zaten gelen haber
+      const cat = classify(title + " " + desc); if (cat === "diger") continue;
+      const g = geocode(title, desc); if (!g) continue;
+      const id = "r:" + (link || hash(title)), [dy, dx] = jitter(id, g.country ? 1.2 : 0.12);
+      items.push({ id, cat, g, imgs, prec: g.country ? "country" : "city", title, origTitle: orig, description: desc, time, lat: g.lat + dy, lon: g.lon + dx, url: link, domain: f.n, source: "RSS: " + f.n });
+    }
+    RSSC.set(f.n, items); ok++;
+    await sleep(500);
+  }
+  if (!ok && !RSSC.size) throw new Error(T("blocked"));
+  S.src.rss.msg = ""; return [...RSSC.values()].flat();
+}
+
+/* ---------- Ek kaynaklar: FreeNewsApi, Newsline, USGS ---------- */
+const PX = (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u);
+async function getJSONany(u, ms) { try { return await getJSON(u, ms); } catch (e) { return await getJSON(PX(u), ms); } }   // önce doğrudan, olmazsa vekil
+const pickArr = (j) => Array.isArray(j) ? j : (j?.data || j?.results || j?.articles || j?.items || j?.stories || j?.news || []);
+const toTime = (v) => { if (v == null || v === "") return null; if (typeof v === "number") return v < 1e12 ? v * 1000 : v; const t = Date.parse(v); return isNaN(t) ? null : t; };
+// Ortak süzgeç: son 24 saat, tekrarı atla, classify → "diger" atla, geocode → yer yoksa atla
+function newsItem(pfx, { title, desc = "", url = "", time = null, domain = "", hint = "", imgs = [] }, source) {
+  title = stripHtml(title || "").replace(/\s+[-–|]\s+[^-–|]{2,40}$/, ""); desc = stripHtml(desc || "").slice(0, 600);
+  if (title.length < 20) return null;
+  if (time && Date.now() - time > MAX_AGE) return null;
+  const k = norm(title).slice(0, 60);
+  const own = { fn: "fnews", nl: "nline" }[pfx];
+  for (const e of S.events.values()) if (e.src !== own && norm(e.title).slice(0, 60) === k) return null;
+  const cat = classify(title + " " + desc); if (cat === "diger") return null;
+  const g = geocode(title, desc + (hint ? " " + hint : "")); if (!g) return null;
+  const id = pfx + ":" + (url || hash(title)), [dy, dx] = jitter(id, g.country ? 1.2 : 0.12);
+  return { id, cat, g, imgs, prec: g.country ? "country" : "city", title, description: desc, time, lat: g.lat + dy, lon: g.lon + dx, url, domain, source };
+}
+async function loadFreeNews() {
+  const j = await getJSONany("https://freenewsapi.ai/v1/search?q=conflict,protest,earthquake,attack&date=24h&size=30&sort=date", 15000);
+  return pickArr(j).map((a) => newsItem("fn", { title: a.title, desc: a.description || a.summary, url: a.url || a.link,
+    time: toTime(a.published_at || a.publishedAt || a.date), domain: a.host || a.source?.name || a.source || hostOf(a.url || ""),
+    hint: a.country || "", imgs: [a.image || a.image_url || a.urlToImage].filter(Boolean).map((u) => ({ src: u, cap: "" })) }, "FreeNewsApi")).filter(Boolean);
+}
+async function loadNewsline() {
+  const j = await getJSONany("https://news.heyitsmejosh.com/api/stories?limit=120", 15000);
+  return pickArr(j).map((a) => newsItem("nl", { title: a.title || a.headline, desc: a.description || a.summary || "", url: a.url || a.link,
+    time: toTime(a.ts ?? a.time ?? a.published), domain: a.outlet || a.source || hostOf(a.url || "") }, "Newsline")).filter(Boolean);
+}
+// USGS: son 24 saatin M4.5+ depremleri (aylık M2.5 listesi 24 saat kuralını bozar ve hissedilmeyen küçük sarsıntılarla haritayı doldurur)
+async function loadUSGS() {
+  const j = await getJSON("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson", 15000);
+  return (j.features || []).filter((f) => f.geometry?.coordinates && Date.now() - f.properties.time < MAX_AGE).map((f) => {
+    const p = f.properties, [lon, lat] = f.geometry.coordinates;
+    return { id: "q:" + f.id, cat: "afet", title: `M${(+p.mag).toFixed(1)} earthquake: ${p.place || "unknown location"}`, place: p.place || "",
+      time: p.time, lat, lon, url: p.url, alertLv: p.alert ? p.alert[0].toUpperCase() + p.alert.slice(1) : "", active: Date.now() - p.time < 6 * 3600e3,
+      prec: "exact", domain: "USGS", source: "USGS" };
+  });
+}
+const refreshAll = () => { run("gdacs", loadGDACS); run("eonet", loadEONET); run("wiki", loadWiki); run("rss", loadRSS); run("fnews", loadFreeNews); run("nline", loadNewsline); run("usgs", loadUSGS); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { run("gdacs", loadGDACS); watchWiki(); } });
+
+
+/* ---------- Mini logo: giriş ekranındaki tel küre + nokta ızgarası + Büyük Ayı, yavaşça döner ---------- */
+function miniLogo(cv) {
+  const g = cv.getContext("2d"), S = cv.width, C = S / 2, R = S * 0.47, tilt = 0.42;
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const fib = [...Array(Math.round(S * 4))].map(() => ({ a: rnd() * 6.2832, s: R * Math.sqrt(rnd()) * 0.92, e: R * (0.92 + rnd() * 0.08), al: 0.05 + rnd() * 0.16 }));
+  const stars = [[-0.80, 0.03], [-0.40, -0.14], [-0.14, -0.07], [0.19, -0.01], [0.32, 0.23], [0.79, 0.13], [0.79, -0.20]].map(([x, y]) => {
+    const u = x / 0.9, v = -y / 0.9, w = Math.sqrt(Math.max(0, 1 - u * u - v * v));
+    const y0 = v * Math.cos(tilt) + w * Math.sin(tilt), z0 = -v * Math.sin(tilt) + w * Math.cos(tilt);
+    return { la: Math.asin(Math.max(-1, Math.min(1, y0))), lo: Math.atan2(u, z0) };
+  });
+  const proj = (la, lo, rot) => { const L = lo + rot, x = Math.cos(la) * Math.sin(L), y0 = Math.sin(la), z0 = Math.cos(la) * Math.cos(L);
+    return { x: C + x * R * 0.9, y: C - (y0 * Math.cos(tilt) - z0 * Math.sin(tilt)) * R * 0.9, z: y0 * Math.sin(tilt) + z0 * Math.cos(tilt) }; };
+  const t0 = performance.now();
+  function draw() {
+    if (document.hidden || !cv.isConnected || cv.offsetParent === null) return;
+    const t = (performance.now() - t0) / 1000, rot = Math.sin(t * 0.35) * 0.5;   // logo gibi: sürekli, hafif salınımla döner
+    g.clearRect(0, 0, S, S);
+    g.lineWidth = Math.max(0.35, S / 140);
+    for (const f of fib) { const c = Math.cos(f.a), s2 = Math.sin(f.a); g.strokeStyle = `rgba(215,222,228,${f.al})`; g.beginPath(); g.moveTo(C + c * f.s, C + s2 * f.s); g.lineTo(C + c * f.e, C + s2 * f.e); g.stroke(); }
+    for (let la = -72; la <= 72; la += 18) { const lr = la * Math.PI / 180, st = 18 / Math.max(0.3, Math.cos(lr));
+      for (let lo = -180; lo < 180; lo += st) { const q = proj(lr, lo * Math.PI / 180, rot); if (q.z <= 0.05) continue;
+        g.fillStyle = `rgba(240,244,247,${0.35 + 0.6 * q.z})`; g.beginPath(); g.arc(q.x, q.y, S / 90 + q.z * S / 70, 0, 6.2832); g.fill(); } }
+    stars.forEach((st, i) => { const q = proj(st.la, st.lo, rot); if (q.z <= 0.05) return;
+      const tw = 0.75 + 0.25 * Math.sin(t * 2.4 + i * 1.3), core = S / 64 + q.z * S / 90;
+      const gl = g.createRadialGradient(q.x, q.y, core * 0.4, q.x, q.y, core * 4.5); gl.addColorStop(0, `rgba(140,228,255,${0.55 * tw})`); gl.addColorStop(1, "rgba(140,228,255,0)");
+      g.fillStyle = gl; g.beginPath(); g.arc(q.x, q.y, core * 4.5, 0, 6.2832); g.fill();
+      g.fillStyle = "rgba(205,246,255,1)"; g.beginPath(); g.arc(q.x, q.y, core, 0, 6.2832); g.fill(); });
+  }
+  draw(); setInterval(() => { if (!document.body.classList.contains("engaged") && !document.getElementById("splash")) draw(); }, 120);   // [2.3] splash sırasında durur
+}
+miniLogo($("bLogo")); miniLogo($("pLogo"));
+
+/* ---------- Uygulama: kurulabilir uygulama ve APK için arka plan çalışanı (ekranda düğme yok) ---------- */
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("wm-sw.js").catch(() => {});
+/* ---------- Başlat ---------- */
+renderStatic(); renderChips(); renderSrcs(); renderList();
+let started = false;
+window.startFeeds = () => { if (started) return; started = true;
+refreshAll(); watchWiki();
+Object.assign(S.src.deep, { durum: "ok", n: Object.keys(DEEPC).length, t: new Date() });
+setInterval(() => run("gdacs", loadGDACS), 5 * 60 * 1000);   // [2.3] 2 → 5 dk
+setInterval(() => run("eonet", loadEONET), 10 * 60 * 1000);  // [2.3] 5 → 10 dk
+setInterval(() => run("rss", loadRSS), 5 * 60 * 1000);
+setInterval(() => run("fnews", loadFreeNews), 5 * 60 * 1000);   // [2.3] 3 → 5 dk
+setInterval(() => run("nline", loadNewsline), 4 * 60 * 1000);   // [2.3] 2 → 4 dk
+setInterval(() => run("usgs", loadUSGS), 5 * 60 * 1000);
+setInterval(watchWiki, 60 * 1000);
+setInterval(() => run("wiki", loadWiki), 10 * 60 * 1000);
+// 12 ajans sırayla, 5 sn arayla → her ajans dakikada bir okunur
+// Bluesky: açılışta 12 ajans sırayla bir kez okunur, sonra her 30 sn'de bir ajans (rate limit güvenliği)
+// Bluesky: 12 ajans sırayla, 5 sn arayla → her ajans ≈1 dakikada bir (Bluesky'ın herkese açık sınırının çok altında)
+(async () => { for (let i = 0; i < AGENCIES.length; i++) { await run("bsky", loadAgency); await sleep(1200); } setInterval(() => run("bsky", loadAgency), 10000); })();   // [2.3] 5 → 10 sn (her ajans ~2 dk; hız sınırı güvenliği)
+setInterval(() => { purgeOld(); renderList(); }, 60 * 1000);
+};
+// [2.3] veriler yalnızca OPEN sonrası başlar (splash sırasında ağ ve işlemci boş kalır)
+})();
+</script>
+</body>
+</html>
