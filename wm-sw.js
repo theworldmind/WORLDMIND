@@ -1,4 +1,4 @@
-const C = "wm-shell-v4";
+const C = "wm-shell-v5";
 const LIB = "wm-lib-cesium-1.121.0";   // harita kütüphanesi: sürümü sabit, bir kez iner, cihazda kalır
 const KEEP = [C, LIB];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(C).then((c) => c.addAll(["./", "wm-icon-192.png", "wm-icon-512.png"]).catch(() => {}))); self.skipWaiting(); });
