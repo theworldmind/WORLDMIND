@@ -1522,6 +1522,19 @@ const L34 = {
   de: { moonGo: "Zum Mond reisen", moonFind: "Der Mond steht am Himmel — tippe auf „Zum Mond reisen“" },
 };
 for (const k in L34) Object.assign(L[k], L34[k]);
+// [3.6] Ay'da gündüz: yıldızların görünmemesinin sebebi
+const L35 = {
+  en: { moonDay: "Lunar day \u00b7 the sunlit ground outshines the stars, exactly as in the Apollo photographs" },
+  tr: { moonDay: "Ay'da g\u00fcnd\u00fcz \u00b7 g\u00fcne\u015f alan zemin y\u0131ld\u0131zlar\u0131 bast\u0131r\u0131r, Apollo foto\u011fraflar\u0131ndaki gibi" },
+  it: { moonDay: "Giorno lunare \u00b7 il suolo illuminato cancella le stelle, come nelle foto dell'Apollo" },
+  ru: { moonDay: "\u041b\u0443\u043d\u043d\u044b\u0439 \u0434\u0435\u043d\u044c \u00b7 \u043e\u0441\u0432\u0435\u0449\u0451\u043d\u043d\u044b\u0439 \u0433\u0440\u0443\u043d\u0442 \u0437\u0430\u0441\u0432\u0435\u0447\u0438\u0432\u0430\u0435\u0442 \u0437\u0432\u0451\u0437\u0434\u044b \u2014 \u043a\u0430\u043a \u043d\u0430 \u0441\u043d\u0438\u043c\u043a\u0430\u0445 \u00ab\u0410\u043f\u043e\u043b\u043b\u043e\u043d\u0430\u00bb" },
+  fr: { moonDay: "Jour lunaire \u00b7 le sol \u00e9clair\u00e9 efface les \u00e9toiles, comme sur les photos d'Apollo" },
+  es: { moonDay: "D\u00eda lunar \u00b7 el suelo iluminado apaga las estrellas, igual que en las fotos del Apolo" },
+  zh: { moonDay: "\u6708\u9762\u767d\u663c \u00b7 \u9633\u5149\u4e0b\u7684\u5730\u9762\u76d6\u8fc7\u4e86\u661f\u5149\uff0c\u4e0e\u963f\u6ce2\u7f57\u7167\u7247\u4e00\u6837" },
+  ar: { moonDay: "\u0646\u0647\u0627\u0631 \u0642\u0645\u0631\u064a \u00b7 \u0627\u0644\u062a\u0631\u0628\u0629 \u0627\u0644\u0645\u0636\u064a\u0626\u0629 \u062a\u062d\u062c\u0628 \u0627\u0644\u0646\u062c\u0648\u0645\u060c \u0643\u0645\u0627 \u0641\u064a \u0635\u0648\u0631 \u0623\u0628\u0648\u0644\u0648" },
+  de: { moonDay: "Mondtag \u00b7 der besonnte Boden \u00fcberstrahlt die Sterne, genau wie auf den Apollo-Fotos" },
+};
+for (const k in L35) Object.assign(L[k], L35[k]);
 // [3.2] Ay
 { const M = {
   en: ["The Moon", "The real Moon, at its true position in the sky"],
@@ -5300,21 +5313,210 @@ uniform mat3 uSky;
 uniform vec2 uTan;
 uniform float uEA,uSA,uT,uPix,uVis;
 uniform sampler2D uTex;
-${STAR_GLSL}
+
 float h21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.y);}
+float h13b(vec3 p){p=fract(p*.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
+float vn3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ return mix(mix(mix(h13b(i),h13b(i+vec3(1,0,0)),f.x),mix(h13b(i+vec3(0,1,0)),h13b(i+vec3(1,1,0)),f.x),f.y),
+            mix(mix(h13b(i+vec3(0,0,1)),h13b(i+vec3(1,0,1)),f.x),mix(h13b(i+vec3(0,1,1)),h13b(i+vec3(1,1,1)),f.x),f.y),f.z);}
 float vn2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
  return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
 float fbm(vec2 p,float k){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vn2(p)*k;p*=2.03;a*=.5;k=min(1.,k*1.25);}return s;}
-// Krater alanı: her hücrede bir krater; içi çukur, kenarı yükselen halka. Üç ölçek üst üste.
+
+/* ---------- Gökyüzü ----------
+   Çıplak gözle tüm gökyüzünde ~6.000 yıldız görünür ve bunların ancak ~20'si
+   gerçekten parlaktır. Eski alan ızgaranın %14'ünü yıldız yapıyordu: on binlerce,
+   hepsi birbirine yakın parlaklıkta. Burada dağılım dik: az parlak, çok sönük. */
+float starL(vec3 d,float K,float th,float px,float pw){
+  vec3 p=d*K,c=floor(p),f=fract(p); float h=h13b(c); if(h<th)return 0.;
+  vec3 o=vec3(h13b(c+17.1),h13b(c+31.7),h13b(c+47.3))*.7+.15;
+  float r=length(f-o), s=max(px*K*1.3,.028);
+  return pow((h-th)/(1.-th),pw)*smoothstep(s,0.,r);
+}
+vec3 realStars(vec3 d,float px){
+  vec3 col=vec3(0.);
+  float band=dot(d,normalize(vec3(.32,.88,-.35)));
+  float mw=exp(-pow(band/.062,2.));
+  if(mw>.004){
+    // pus degil doku: ince yapi + karanlik toz seritleri. Parlakligi bilerek dusuk.
+    float tex=.22+.46*vn3(d*19.)+.32*vn3(d*53.);
+    float dust=smoothstep(.30,.78,vn3(d*23.+vec3(4.)));
+    col+=vec3(.47,.53,.70)*mw*tex*(1.-dust*.70)*.030;
+  }
+  float b1=starL(d,42.,.940,px,2.4);
+  if(b1>0.){
+    float tc=h21(floor(d*42.).xy+3.7);
+    col+=mix(vec3(.70,.79,1.0),vec3(1.0,.86,.66),tc)*b1*1.15;
+  }
+  // Samanyolu'nun parlakligi aslinda cozulemeyen yildizlardir: kusakta siklasirlar
+  col+=vec3(.78,.82,.94)*starL(d,124.,.972,px,3.4)*.16;
+  col+=vec3(.76,.80,.92)*starL(d,168.,.962-mw*.030,px,3.0)*(.05+mw*.16);
+  return col;
+}
+
+/* ---------- İniş bölgesi ----------
+   Apollo'nun indiği yerde kalanlar: iniş kademesi, dört ayak, bayrak.
+   Ölçüler gerçeğinden: iniş kademesi 4,2 m genişlik, ayak açıklığı ~9,4 m,
+   tabla yarıçapı 0,94 m, toplam yükseklik ~7 m. */
+const float GY=-1.7;                 // göz 1,7 m'de; zemin burada
+uniform float uAz;                   // Dünya'nın o anki yönü: bölge buna göre kurulur,
+                                     // böylece ilk bakışta Dünya, bayrak ve araç birlikte görünür
+vec2 rot2(vec2 q,float a){float c=cos(a),s=sin(a);return vec2(q.x*c-q.y*s,q.x*s+q.y*c);}
+vec3 ryp(vec3 q){vec2 r=rot2(q.xz,uAz);return vec3(r.x,q.y,r.y);}
+#define LM ryp(vec3(-8.0,GY,16.0))
+#define FL ryp(vec3(3.10,GY,4.10))
+
+float sdStar5(vec2 p,float r,float rf){
+  const vec2 k1=vec2(.809016994,-.587785252);
+  const vec2 k2=vec2(-k1.x,k1.y);
+  p.x=abs(p.x);
+  p-=2.*max(dot(k1,p),0.)*k1;
+  p-=2.*max(dot(k2,p),0.)*k2;
+  p.x=abs(p.x); p.y-=r;
+  vec2 ba=rf*vec2(-k1.y,k1.x)-vec2(0,1);
+  float hh=clamp(dot(p,ba)/dot(ba,ba),0.,r);
+  return length(p-ba*hh)*sign(p.y*ba.x-p.x*ba.y);
+}
+/* Türk Bayrağı Kanunu'ndaki oranlar (G = en, boy 1,5G):
+   ay dış daire merkez 0,5G yarıçap 0,25G · iç daire merkez 0,5625G yarıçap 0,20G
+   yıldız dış daire merkez 0,8125G yarıçap 0,125G, bir ucu göndere dönük. */
+vec3 trFlag(vec2 uv){
+  vec2 q=vec2(uv.x*1.5,uv.y);
+  float o1=length(q-vec2(.5,.5))-.25;
+  float i1=length(q-vec2(.5625,.5))-.20;
+  float cres=max(o1,-i1);
+  vec2 sp=(q-vec2(.8125,.5))/.125;
+  sp=vec2(-sp.y,sp.x);
+  float st=sdStar5(sp,1.,.382)*.125;
+  float m=min(cres,st);
+  // bez albedosu: kumaş güneşte parlamaz, kırmızı koyu kalır
+  return mix(vec3(.70,.70,.69),vec3(.40,.027,.038),smoothstep(0.,.0035,m));
+}
+
+// Dikey eksenli düzgün sekizgen prizma (iniş kademesi)
+float hitOcta(vec3 ro,vec3 rd,vec3 c,float r,float y0,float y1,out vec3 N){
+  float tN=-1e9,tF=1e9; vec3 nN=vec3(0.);
+  for(int i=0;i<4;i++){
+    float a=float(i)*.7853981634;
+    vec3 n=vec3(cos(a),0.,sin(a));
+    float dn=dot(rd,n), on=dot(ro-c,n);
+    if(abs(dn)<1e-6){ if(abs(on)>r)return -1.; }
+    else{
+      float ta=(-r-on)/dn, tb=(r-on)/dn; vec3 na=-n,nb=n;
+      if(ta>tb){float s=ta;ta=tb;tb=s; vec3 sn=na;na=nb;nb=sn;}
+      if(ta>tN){tN=ta;nN=na;} tF=min(tF,tb);
+    }
+  }
+  if(abs(rd.y)<1e-6){ if(ro.y-c.y<y0||ro.y-c.y>y1)return -1.; }
+  else{
+    float ta=(c.y+y0-ro.y)/rd.y, tb=(c.y+y1-ro.y)/rd.y; vec3 na=vec3(0,-1,0),nb=vec3(0,1,0);
+    if(ta>tb){float s=ta;ta=tb;tb=s; vec3 sn=na;na=nb;nb=sn;}
+    if(ta>tN){tN=ta;nN=na;} tF=min(tF,tb);
+  }
+  if(tN>tF||tF<0.||tN<=0.)return -1.;
+  N=nN; return tN;
+}
+float hitBox(vec3 ro,vec3 rd,vec3 c,vec3 h,out vec3 N){
+  vec3 m=1./(rd+vec3(1e-7));
+  vec3 A=(c-h-ro)*m, B=(c+h-ro)*m;
+  vec3 lo=min(A,B), hi=max(A,B);
+  float tN=max(max(lo.x,lo.y),lo.z), tF=min(min(hi.x,hi.y),hi.z);
+  if(tN>tF||tF<0.||tN<=0.)return -1.;
+  vec3 q=(ro+tN*rd-c)/h, aq=abs(q);
+  if(aq.x>=aq.y&&aq.x>=aq.z)N=vec3(sign(q.x),0.,0.);
+  else if(aq.y>=aq.z)N=vec3(0.,sign(q.y),0.);
+  else N=vec3(0.,0.,sign(q.z));
+  return tN;
+}
+// Eğik silindir: ayaklar ve direkler (iq'nun kapaklı silindiri)
+float hitSeg(vec3 ro,vec3 rd,vec3 a,vec3 b,float ra,out vec3 N){
+  vec3 ba=b-a, oc=ro-a;
+  float baba=dot(ba,ba), bard=dot(ba,rd), baoc=dot(ba,oc);
+  float k2=baba-bard*bard;
+  float k1=baba*dot(oc,rd)-baoc*bard;
+  float k0=baba*dot(oc,oc)-baoc*baoc-ra*ra*baba;
+  float h=k1*k1-k2*k0;
+  if(h<0.)return -1.;
+  h=sqrt(h);
+  float t=(-k1-h)/k2;
+  float y=baoc+t*bard;
+  if(y>0.&&y<baba){ if(t<=0.)return -1.; N=(oc+t*rd-ba*y/baba)/ra; return t; }
+  t=((y<0.?0.:baba)-baoc)/bard;
+  if(abs(k1+k2*t)<h){ if(t<=0.)return -1.; N=ba*sign(y)/sqrt(baba); return t; }
+  return -1.;
+}
+
+/* Bütün cisimler. ro verildiği için hem kameradan hem de gölge ışınından çağrılır. */
+float objects(vec3 ro,vec3 rd,out vec3 N,out vec3 alb){
+  float best=1e20,t; vec3 n;
+  N=vec3(0.,1.,0.); alb=vec3(.5);
+  // ---- iniş kademesi: sekizgen, altın ısı örtüsü ----
+  t=hitOcta(ro,rd,LM,2.1,.95,2.60,n);
+  if(t>0.&&t<best){best=t;N=n;alb=vec3(.40,.285,.105);}
+  // ---- üst kademe: daha dar, önü eğik, gri ----
+  t=hitOcta(ro,rd,LM,1.45,2.60,4.35,n);
+  if(t>0.&&t<best){best=t;N=n;alb=vec3(.46,.455,.44);}
+  t=hitBox(ro,rd,LM+vec3(0.,3.05,-1.30),vec3(.95,.42,.30),n);     // mürettebat penceresi çıkıntısı
+  if(t>0.&&t<best){best=t;N=n;alb=vec3(.30,.30,.30);}
+  t=hitSeg(ro,rd,LM+vec3(0.,4.35,0.),LM+vec3(0.,4.62,0.),.55,n);  // üstteki kenetlenme halkası
+  if(t>0.&&t<best){best=t;N=n;alb=vec3(.50,.49,.47);}
+  // ---- dört ayak: dışa açılı, ucunda geniş tabla ----
+  for(int i=0;i<4;i++){
+    float a=.7853981634+float(i)*1.5707963;
+    vec2 u=vec2(cos(a),sin(a));
+    vec3 top=LM+vec3(u.x*1.55,1.45,u.y*1.55);
+    vec3 pad=LM+vec3(u.x*4.10,.12,u.y*4.10);
+    t=hitSeg(ro,rd,top,pad,.095,n);
+    if(t>0.&&t<best){best=t;N=n;alb=vec3(.44,.44,.43);}
+    t=hitSeg(ro,rd,LM+vec3(u.x*1.9,2.35,u.y*1.9),pad+vec3(0.,.35,0.),.055,n);   // destek çubuğu
+    if(t>0.&&t<best){best=t;N=n;alb=vec3(.42,.42,.41);}
+    t=hitSeg(ro,rd,pad,pad+vec3(0.,.17,0.),.94,n);                               // tabla
+    if(t>0.&&t<best){best=t;N=n;alb=vec3(.50,.49,.47);}
+  }
+  // ---- bayrak: direk, enine çubuk, bez ----
+  t=hitSeg(ro,rd,FL,FL+vec3(0.,2.05,0.),.017,n);
+  if(t>0.&&t<best){best=t;N=n;alb=vec3(.55,.55,.54);}
+  t=hitSeg(ro,rd,FL+vec3(0.,2.02,0.),FL+vec3(.90,2.02,0.),.014,n);
+  if(t>0.&&t<best){best=t;N=n;alb=vec3(.55,.55,.54);}
+  {
+    vec3 c=FL+vec3(.45,1.71,0.), nz=vec3(0.,0.,1.);
+    float den=dot(rd,nz);
+    if(abs(den)>1e-5){
+      float tt=(dot(c-ro,nz))/den;
+      if(tt>0.&&tt<best){
+        vec3 P=ro+tt*rd-c;
+        float u=P.x/.45, w=P.y/.30;
+        if(abs(u)<1.&&abs(w)<1.){
+          best=tt; N=nz*-sign(den);
+          alb=trFlag(vec2(u*.5+.5, w*.5+.5));   // uv.x=0 gönder: direğe bitişik kenar
+        }
+      }
+    }
+  }
+  return best<1e19?best:-1.;
+}
+// Gölge: Ay'da atmosfer yok, gölge keskin ve simsiyah
+float shade(vec3 P){
+  vec3 n,a;
+  float t=objects(P+uSun*.02,uSun,n,a);
+  return t>0.?0.:1.;
+}
+
+/* ---------- Arazi ---------- */
+// Krater alanı: komşu hücreler de taranır, yoksa kraterler hücre kenarından kesilir
 float craters(vec2 p,float lod){
   float h=0.;
   for(int i=0;i<3;i++){
     float sc=exp2(float(i)*1.6);
-    vec2 q=p*sc; vec2 c=floor(q); vec2 f=fract(q);
-    float rnd=h21(c+float(i)*19.7);
-    if(rnd>.42){
-      vec2 ctr=vec2(h21(c+7.3),h21(c+13.1))*.6+.2;
-      float rad=.14+rnd*.3, d=length(f-ctr)/rad;
+    vec2 q=p*sc, c0=floor(q);
+    for(int j=0;j<9;j++){
+      vec2 off=vec2(float(j/3)-1.,mod(float(j),3.)-1.);
+      vec2 c=c0+off;
+      float rnd=h21(c+float(i)*19.7);
+      if(rnd<=.42)continue;
+      vec2 ctr=c+vec2(h21(c+7.3),h21(c+13.1))*.6+.2;
+      float rad=.14+rnd*.3, d=length(q-ctr)/rad;
+      if(d>1.6)continue;
       float bowl=-(1.-smoothstep(.0,.85,d))*rad*.55;
       float rim=exp(-pow((d-.92)/.17,2.))*rad*.30;
       h+=(bowl+rim)/sc*(1.-lod*float(i)*.4);
@@ -5324,36 +5526,89 @@ float craters(vec2 p,float lod){
 }
 float relief(vec2 p,float lod){
   float h=fbm(p*.012,1.)*5.5+fbm(p*.09,1.-lod*.5)*.55+craters(p*.02,lod)*22.;
-  h+=fbm(p*1.3,max(0.,1.-lod*1.6))*.035;      // çakıl: yalnızca yakında
+  h+=fbm(p*1.3,max(0.,1.-lod*1.6))*.035;
   return h;
 }
+/* Ayak izleri: Apollo botunun tabanı 32 x 16 cm, enine dişli. Regolit öyle ince ki
+   iz keskin kalır; bastırılan toz koyulaşır, kenara devrilen toz açılır. */
+float boots(vec2 g,out float ab){
+  ab=0.; float dep=0.;
+  for(int i=0;i<3;i++){
+    float fi=float(i);
+    float an=.75+fi*1.9;
+    vec2 o=vec2(2.2-fi*3.4,1.1+fi*2.0);
+    vec2 r=rot2(g,-uAz)-o;
+    vec2 L=vec2(r.x*cos(an)+r.y*sin(an),-r.x*sin(an)+r.y*cos(an));
+    if(abs(L.x)>.55||L.y<0.||L.y>13.)continue;
+    float idx=floor(L.y/.70);
+    float side=mod(idx,2.)*2.-1.;
+    float wob=(h21(vec2(idx,fi))-.5)*.06;
+    vec2 q=vec2(L.x-side*.135+wob,L.y-idx*.70-.35);
+    vec2 hh=abs(q)-vec2(.078,.15);
+    float d=length(max(hh,0.))+min(max(hh.x,hh.y),0.)-.012;
+    if(d<.06){
+      float tread=step(.52,fract(q.y*12.5));
+      float ins=smoothstep(.010,-.012,d);
+      dep+=ins*(.016+.011*tread);          // iz golgesini bicimden alsin, boyadan degil
+      ab-=ins*(.0055+.0030*tread);
+      ab+=smoothstep(0.,-.026,abs(d-.020)-.008)*.009;
+    }
+  }
+  return dep;
+}
+
 void main(){
   vec3 d=normalize(uF+v.x*uTan.x*uR+v.y*uTan.y*uU);
   vec3 col=vec3(0.);
   float RM=1737400.0, HH=1.7;
   float a=RM+HH, b=a*d.y, c2=2.0*RM*HH+HH*HH;
-  bool hit=(b<0.0)&&(b*b>c2);
-  if(hit){
-    float t=c2/(-b+sqrt(max(1e-6,b*b-c2)));    // sayısal olarak kararlı kök: yakın kesişim
-    vec3 P=t*d;
+  bool hitG=(b<0.0)&&(b*b>c2);
+  float tG=1e20;
+  if(hitG) tG=c2/(-b+sqrt(max(1e-6,b*b-c2)));
+
+  /* Güneş ufkun üstündeyken yüzey göz kamaştırır: yıldızlar görünmez.
+     Apollo'nun yüzey fotoğraflarında gökyüzünün simsiyah olmasının tek sebebi budur. */
+  float night=1.0-smoothstep(-0.035,0.018,uSun.y);
+  float adapt=mix(1.0,22.0,night);
+
+  vec3 NO,albO;
+  float tO=objects(vec3(0.),d,NO,albO);
+  if(tO<0.)tO=1e20;
+
+  if(hitG&&tG<tO){
+    vec3 P=tG*d;
     vec3 N0=normalize(vec3(P.x/a,P.y/a+1.0,P.z/a));
-    float lod=clamp(log2(1.0+t/6.0)/7.0,0.0,1.0);
+    float lod=clamp(log2(1.0+tG/6.0)/7.0,0.0,1.0);
     vec2 g=P.xz;
-    float e=max(.12,t*.004);
+    float e=max(.12,tG*.004);
     float h0=relief(g,lod);
     float hx=relief(g+vec2(e,0.),lod), hz=relief(g+vec2(0.,e),lod);
     vec3 nT=normalize(vec3(-(hx-h0)/e,1.0,-(hz-h0)/e));
-    vec3 N=normalize(N0+vec3(nT.x,0.0,nT.z)*(1.0-lod*.55));
     float alb=.108+vn2(g*.05)*.045+vn2(g*.6)*.02;
+    // ayak izleri kendi ince ölçeğinde: arazinin 12 cm'lik adımı bunları yutuyordu
+    if(lod<.30){
+      float e2=max(.011,tG*.0014), ab0,ab1,ab2;
+      float p0=boots(g,ab0), p1=boots(g+vec2(e2,0.),ab1), p2=boots(g+vec2(0.,e2),ab2);
+      nT=normalize(nT+vec3((p1-p0)/e2,0.,(p2-p0)/e2)*(1.-smoothstep(.12,.30,lod)));
+      alb+=ab0*(1.-smoothstep(.12,.30,lod));
+    }
+    vec3 N=normalize(N0+vec3(nT.x,0.0,nT.z)*(1.0-lod*.55));
     float nl=max(0.,dot(N,uSun));
-    // Atmosfer yok: ara ton da yok. Aydınlık taraf sert, gölge simsiyah.
-    vec3 lit=vec3(alb)*vec3(1.0,.975,.94)*nl*2.35;
-    lit+=vec3(alb)*max(0.,dot(N,uEarth))*vec3(.30,.45,.70)*.055;   // yeryüzü ışığı: tek yumuşak dolgu
-    lit+=vec3(alb)*pow(max(0.,dot(d,-uSun)),8.)*nl*.25;            // karşıt yön saçılması (regolitin imzası)
+    float sh=(nl>0.&&tG<120.)?shade(P):1.0;        // cisimlerin gölgesi: yalnız yakında aranır
+    vec3 lit=vec3(alb)*vec3(1.0,.975,.94)*nl*sh*2.35;
+    lit+=vec3(alb)*max(0.,dot(N,uEarth))*vec3(.30,.45,.70)*.055*adapt;
+    lit+=vec3(alb)*pow(max(0.,dot(d,-uSun)),8.)*nl*sh*.25;
     col=lit;
     col*=1.0-smoothstep(.55,1.0,lod)*.08;
+  } else if(tO<1e19){
+    vec3 P=tO*d;
+    float nl=max(0.,dot(NO,uSun));
+    float sh=nl>0.?shade(P):1.0;
+    col=albO*vec3(1.,.985,.96)*nl*sh*2.35;
+    col+=albO*max(0.,dot(NO,uEarth))*vec3(.30,.45,.70)*.055*adapt;
+    col+=albO*vec3(.55,.54,.52)*max(0.,-NO.y*.5+.5)*.055;    // zeminden gelen dolgu
   } else {
-    col=stars(uSky*d,uPix,vec3(.86,.9,1.))*1.15;
+    col=realStars(uSky*d,uPix)*night;
     float sa=acos(clamp(dot(d,uSun),-1.,1.));
     if(sa<uSA){col=vec3(12.0);}
     else col+=vec3(1.,.96,.88)*exp(-(sa-uSA)*170.0)*.55;
@@ -5365,11 +5620,11 @@ void main(){
       float lon=atan(dot(n,uEY),dot(n,uEX)), lat=asin(clamp(dot(n,uEZ),-1.,1.));
       vec3 t0=texture2D(uTex,vec2(lon*.1591549+.5,.5-lat*.3183099)).rgb;
       float nl=max(0.,dot(n,uSun));
-      vec3 day=t0*(.25+1.35*nl);
-      vec3 night=t0*.012+vec3(.006,.008,.012);
-      vec3 e=mix(night,day,smoothstep(-.05,.18,dot(n,uSun)));
+      vec3 day=t0*(.06+1.65*nl);
+      vec3 nite=t0*.010+vec3(.005,.007,.011);
+      vec3 e=mix(nite,day,smoothstep(-.06,.12,dot(n,uSun)));
       float limb=smoothstep(.82,1.0,sqrt(r2));
-      e+=vec3(.25,.45,.85)*limb*nl*.5;                              // ince mavi atmosfer kenarı
+      e+=vec3(.25,.45,.85)*limb*nl*.5;
       col=mix(col,e,.995);
     } else {
       float g2=exp(-(ea-uEA)/max(uEA,.004)*2.2);
@@ -5377,7 +5632,7 @@ void main(){
     }
   }
   col*=uVis;
-  col=col/(col+vec3(.85))*1.35;                                     // ton eşleme: güneş patlamadan, gölge dibe oturmadan
+  col=col/(col+vec3(.85))*1.35;
   gl_FragColor=vec4(pow(max(col,vec3(0.)),vec3(.4545)),1.);
 }`;
 
@@ -5391,7 +5646,7 @@ function msInit() {
   MOONS.quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, MOONS.quad);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   MOONS.aP = gl.getAttribLocation(MOONS.prog, "p");
-  for (const n of ["uF", "uR", "uU", "uSun", "uEarth", "uER", "uEU", "uEX", "uEY", "uEZ", "uSky", "uTan", "uEA", "uSA", "uT", "uPix", "uVis", "uTex"])
+  for (const n of ["uF", "uR", "uU", "uSun", "uEarth", "uER", "uEU", "uEX", "uEY", "uEZ", "uSky", "uTan", "uEA", "uSA", "uT", "uPix", "uVis", "uTex", "uAz"])
     MOONS.U[n] = gl.getUniformLocation(MOONS.prog, n);
   MOONS.gl = gl; MOONS.cv = cv;
   cv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); MOONS.gl = null; MOONS.tex = null; }, false);
@@ -5437,6 +5692,7 @@ function msDraw(now) {
   gl.uniformMatrix3fv(U.uSky, false, f.sky);
   gl.uniform2f(U.uTan, tanX, tanY);
   gl.uniform1f(U.uEA, f.earthAng); gl.uniform1f(U.uSA, f.sunAng);
+  gl.uniform1f(U.uAz, Math.atan2(f.earth[0], f.earth[2]));   // [3.6] bölge Dünya'ya göre hizalanır
   gl.uniform1f(U.uT, (now - MOONS.t0) / 1000); gl.uniform1f(U.uPix, 2 * tanY / cv.height);
   gl.uniform1f(U.uVis, MOONS.vis === undefined ? 1 : MOONS.vis);
   if (MOONS.tex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, MOONS.tex); gl.uniform1i(U.uTex, 0); }
@@ -5478,8 +5734,13 @@ async function toMoon() {
   if (!MOONS.on) return;
   MOONS.site = moonFrame();
   MOONS.yaw = Math.atan2(MOONS.site.earth[0], MOONS.site.earth[2]);          // Dünya karşımızda başlar
-  MOONS.pitch = Math.max(0.05, Math.asin(Math.min(.99, MOONS.site.earth[1])) - 0.18);
-  MOONS.fov = 0.95; MOONS.scale = 1; MOONS.t0 = performance.now(); MOONS.vis = 0;
+  // [3.6] Sakinlik Denizi'nde Dünya ufkun ~66° üstünde durur. Ufku da Dünya'yı da aynı
+  // kareye almanın tek yolu geniş bir açıyla açmak; kullanıcı sonra yakınlaştırabiliyor.
+  MOONS.fov = 1.38; MOONS.scale = 1; MOONS.t0 = performance.now(); MOONS.vis = 0;
+  // Dünya'nın üst kenarı kadrajın tepesine değsin: altta iniş bölgesi, üstte Dünya kalır.
+  // Açı, cisim ölçeği ayarına göre kendiliğinden kayar (Dünya büyüdükçe bakış yukarı çıkar).
+  { const el = Math.asin(Math.min(.99, MOONS.site.earth[1]));
+    MOONS.pitch = Math.min(0.85, Math.max(0.06, el + MOONS.site.earthAng + 0.04 - MOONS.fov / 2)); }
   viewer.useDefaultRenderLoop = false;                                        // Ay'dayken harita tamamen durur
   const sec = $("ms"); sec.hidden = false; document.body.classList.add("moonmode");
   sound.scene("earth");
@@ -5487,7 +5748,8 @@ async function toMoon() {
   await msTween(1600, (e) => { MOONS.vis = e; });
   MOONS.vis = 1; MOONS.mode = "surface";
   $("msOut").hidden = false; $("msBreath").hidden = !!matchMedia("(prefers-reduced-motion: reduce)").matches;
-  msHint(`${MOON_SITE.name}`, T("moonHint"));
+  // Gündüzse yıldızların yokluğu hata değil: sebebini söyle.
+  msHint(`${MOON_SITE.name}`, MOONS.site.sun[1] > -0.02 ? T("moonDay") : T("moonHint"));
   MOONS.tick = setInterval(() => { if (MOONS.on) { MOONS.site = moonFrame(); msKick(); } }, 20000);   // Dünya yavaşça döner
 }
 async function fromMoon() {
@@ -5523,7 +5785,7 @@ function msHint(title, body) {
     p.x = e.clientX; p.y = e.clientY;
     if (MOONS.pinch && MOONS.ptrs.size >= 2) {
       const [a, b] = [...MOONS.ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-      MOONS.fov = Math.max(.22, Math.min(1.25, MOONS.pinch.fov * MOONS.pinch.d / Math.max(20, d))); msKick(); return;
+      MOONS.fov = Math.max(.22, Math.min(1.45, MOONS.pinch.fov * MOONS.pinch.d / Math.max(20, d))); msKick(); return;
     }
     const D = MOONS.drag; if (!D || e.pointerId !== D.id) return;
     const k = 2 * Math.tan(MOONS.fov / 2) / Math.max(1, innerHeight);
@@ -5534,7 +5796,7 @@ function msHint(title, body) {
   const up = (e) => { MOONS.ptrs.delete(e.pointerId); if (MOONS.ptrs.size < 2) MOONS.pinch = null; if (MOONS.ptrs.size === 0) MOONS.drag = null; };
   sec.addEventListener("pointerup", up); sec.addEventListener("pointercancel", up);
   sec.addEventListener("wheel", (e) => { if (MOONS.mode !== "surface") return; e.preventDefault();
-    MOONS.fov = Math.max(.22, Math.min(1.25, MOONS.fov * Math.exp(e.deltaY * .0011))); msKick(); }, { passive: false });
+    MOONS.fov = Math.max(.22, Math.min(1.45, MOONS.fov * Math.exp(e.deltaY * .0011))); msKick(); }, { passive: false });
 })();
 // [3.6] Görünür Ay düğmesi: tek dokunuş yeter, basılı tutmak şart değil
 { const g = $("moonGo"); g.textContent = T("moonGo");
