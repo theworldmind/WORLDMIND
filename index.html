@@ -626,7 +626,7 @@ html,body{background:#020304}
 #sunEarth canvas{width:256px;height:256px;display:block}
 #sunEarth.pulse canvas{animation:sunPulse .9s ease-out}
 @keyframes sunPulse{0%{transform:scale(1)}35%{transform:scale(1.25)}100%{transform:scale(1)}}
-body.sunmode #sunEarth,body.sunmode #hud{display:none!important}
+body.sunmode #sunEarth,body.sunmode #hud,body.sunmode #moonGo{display:none!important}
 #ss{position:fixed;inset:0;z-index:3;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 #ss[hidden]{display:none}
 #ss.enter{animation:ssIn 1.1s ease both}
@@ -765,6 +765,80 @@ body.skymode .cesium-widget-credits,body.skymode .cesium-viewer-bottom{opacity:.
 body.skymode{cursor:grab}
 body.skydrag{cursor:grabbing}
 @media (prefers-reduced-motion:reduce){#skyHint{animation:none}}
+/* ===================== [3.4] K3: harita atıfları mobilde de erişilebilir =====================
+   Esri/Maxar, Cesium ion, Google 3D Tiles, NASA ve EUMETSAT atıflarını göstermek lisans gereği.
+   Eski sürüm bunları mobilde display:none ile gizliyordu; artık ⓘ rozetinin altında, okunur hâlde. */
+#crBtn{position:fixed;z-index:6;left:var(--l);bottom:calc(var(--bot) + 10px);width:27px;height:27px;border-radius:50%;
+  display:none;place-items:center;cursor:pointer;color:#bfefff;font:600 13px/1 var(--f-ui);
+  border:1px solid rgba(140,228,255,.35);background:rgba(6,11,17,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#crBtn[aria-expanded="true"]{border-color:var(--signal);color:#fff;box-shadow:0 0 14px var(--signal-glow)}
+@media (max-width:760px){
+  #crBtn{display:grid}
+  .cesium-widget-credits,.cesium-viewer-bottom{display:block!important}
+  .cesium-viewer-bottom{position:fixed!important;left:var(--l)!important;right:var(--r)!important;top:auto!important;
+    bottom:calc(var(--bot) + 46px)!important;z-index:6;max-height:38vh;overflow-y:auto;overscroll-behavior:contain;
+    padding:11px 13px;border-radius:13px;border:1px solid rgba(140,228,255,.22);background:rgba(4,8,13,.96);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none!important}
+  body.credits .cesium-viewer-bottom{display:block!important}
+  .cesium-widget-credits{font-size:11px!important;opacity:1!important;color:var(--soft)!important;line-height:1.5!important}
+  .cesium-widget-credits a{color:var(--signal)!important}
+  body.skymode #crBtn,body.sunmode #crBtn,body.splashing #crBtn{display:none!important}
+  body.skymode .cesium-viewer-bottom,body.sunmode .cesium-viewer-bottom{display:none!important}
+}
+/* ===================== [3.5] Ay yüzeyi sahnesi ===================== */
+#ms{position:fixed;inset:0;z-index:13;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+#ms[hidden]{display:none}
+#ms:active{cursor:grabbing}
+#msGL{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* Kask vizörü: ucuz ama deneyimi anında kuran şey. Kenarda hafif bir cam yansıması ve koyu çerçeve. */
+#msVisor{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 78% 86% at 50% 50%, rgba(0,0,0,0) 56%, rgba(0,0,0,.55) 84%, rgba(0,0,0,.92) 100%),
+    linear-gradient(118deg, rgba(190,225,255,0) 38%, rgba(190,225,255,.055) 46%, rgba(190,225,255,0) 53%),
+    linear-gradient(118deg, rgba(190,225,255,0) 60%, rgba(190,225,255,.03) 65%, rgba(190,225,255,0) 70%)}
+#msOut{position:fixed;left:50%;bottom:calc(var(--bot) + 22px);transform:translateX(-50%);width:min(340px,calc(100vw - 32px));z-index:15}
+#msOut[hidden]{display:none}
+#msOut:active{transform:translateX(-50%) scale(.975)}
+#msHint{position:fixed;left:50%;top:calc(var(--top) + 32px);transform:translateX(-50%);z-index:15;width:max-content;max-width:calc(100vw - 40px);
+  text-align:center;font:400 11.5px/1.5 var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:rgba(205,220,235,.8);
+  text-shadow:0 1px 10px rgba(0,0,0,.9);pointer-events:none;animation:skyHintIn 1s ease both}
+#msHint[hidden]{display:none}
+#msHint b{display:block;margin-bottom:7px;font:300 clamp(19px,4.6vw,32px)/1.12 "Jost","Archivo",sans-serif;letter-spacing:.26em;
+  text-transform:none;color:#fff;text-shadow:0 0 22px rgba(170,200,230,.4),0 2px 14px rgba(0,0,0,.85)}
+/* Nefes rehberi: 4 içeri · 4 tut · 4 dışarı. Sessiz, yalnızca incecik bir halka. */
+#msBreath{position:fixed;left:50%;top:50%;width:132px;height:132px;margin:-66px 0 0 -66px;z-index:14;pointer-events:none;
+  border-radius:50%;border:1px solid rgba(190,220,245,.32);box-shadow:0 0 22px rgba(170,205,235,.12),inset 0 0 18px rgba(170,205,235,.07);
+  animation:msBreathe 12s ease-in-out infinite}
+#msBreath[hidden]{display:none}
+@keyframes msBreathe{
+  0%{transform:scale(.62);opacity:.3}
+  33.3%{transform:scale(1);opacity:.85}
+  66.6%{transform:scale(1);opacity:.85}
+  100%{transform:scale(.62);opacity:.3}}
+body.moonmode .bar,body.moonmode #panel,body.moonmode #card,body.moonmode #settings,body.moonmode #find,
+body.moonmode #toast,body.moonmode #tv,body.moonmode #hud,body.moonmode #sunEarth,body.moonmode #skyLook,
+body.moonmode #moonGo,body.moonmode #crBtn,body.moonmode .cesium-viewer-bottom,body.moonmode .cesium-widget-credits{display:none!important}
+@media (prefers-reduced-motion:reduce){#msBreath{animation:none}#msHint{animation:none}}
+@media (max-width:760px){#msBreath{width:108px;height:108px;margin:-54px 0 0 -54px}}
+/* ===================== [3.6] Ay'a gidiş düğmesi ve gökyüzü büyütmesi ===================== */
+/* Ay ekranda göründüğünde altında beliren dokunulabilir etiket: basılı tutmayı bulmak gerekmiyor */
+#moonGo{position:fixed;z-index:8;left:0;top:0;transform:translate(-50%,0);display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px 8px 11px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  font:600 12.5px/1 var(--f-ui);color:#eaf8ff;background:rgba(6,11,17,.82);border:1px solid rgba(150,232,255,.45);
+  box-shadow:0 0 18px rgba(63,211,245,.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  animation:moonGoIn .5s ease both}
+#moonGo[hidden]{display:none}
+#moonGo::before{content:"";width:13px;height:13px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 34% 34%,#fff 0 42%,#cfe4ef 52%,#8fa4b2 100%);box-shadow:0 0 10px rgba(205,232,245,.7)}
+#moonGo:hover,#moonGo:focus-visible{outline:none;border-color:var(--signal);box-shadow:0 0 24px rgba(63,211,245,.5)}
+#moonGo:active{transform:translate(-50%,0) scale(.96)}
+@keyframes moonGoIn{from{opacity:0;transform:translate(-50%,-6px)}to{opacity:1;transform:translate(-50%,0)}}
+/* Gökyüzü modunda büyütme oranı: dürbün/teleskop etkisi, geometri gerçek kalır */
+#skyZoom{position:fixed;z-index:12;left:50%;bottom:calc(var(--bot) + 96px);transform:translateX(-50%);
+  padding:5px 12px;border-radius:999px;pointer-events:none;
+  font:500 11px/1 var(--f-data);letter-spacing:.1em;color:#d6f1ff;background:rgba(4,8,13,.7);
+  border:1px solid rgba(150,232,255,.3);text-shadow:0 1px 6px rgba(0,0,0,.8)}
+#skyZoom[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){#moonGo{animation:none}}
 </style>
 </head>
 <body class="splashing">
@@ -808,7 +882,8 @@ $("spOpen").addEventListener("click", () => { if (window.WM_OPEN) return; window
   const BASE = $("spStarsBase");                                     // [2.3] sabit katman ekranda ayrı tuval: bir kez çizilir, her karede kopyalanmaz
   const paintBase = () => { BASE.width = cv.width; BASE.height = cv.height; const b = BASE.getContext("2d"); b.setTransform(dpr, 0, 0, dpr, 0, 0);
     const bg = b.createRadialGradient(innerWidth / 2, innerHeight * 0.42, 0, innerWidth / 2, innerHeight * 0.42, Math.max(innerWidth, innerHeight) * 0.75);
-    bg.addColorStop(0, "#070c11"); bg.addColorStop(0.55, "#04070a"); bg.addColorStop(1, "#020304");   // [2.6] derin siyah b.fillStyle = bg; b.fillRect(0, 0, innerWidth, innerHeight);
+    bg.addColorStop(0, "#070c11"); bg.addColorStop(0.55, "#04070a"); bg.addColorStop(1, "#020304");   // [2.6] derin siyah
+    b.fillStyle = bg; b.fillRect(0, 0, innerWidth, innerHeight);   // [3.4] H1: bu iki çağrı yorum satırının sağında kalmıştı, zemin hiç çizilmiyordu
     for (const s2 of st) if (s2.a < 0.8) { b.fillStyle = s2.c ? `rgba(120,215,240,${0.15 + s2.a * 0.3})` : `rgba(225,238,250,${0.08 + s2.a * 0.35})`; b.beginPath(); b.arc(s2.x * innerWidth, s2.y * innerHeight, 0.6, 0, 6.283); b.fill(); } };
   paintBase(); addEventListener("resize", paintBase);
   const tw = st.filter((s2) => s2.a >= 0.8);                           // yalnız parlak yıldızlar parıldar (~80 tane)
@@ -979,6 +1054,11 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   <div class="seg" id="s_quality"><button type="button" data-q="saver" data-i="qSaver">Battery saver</button><button type="button" data-q="balanced" data-i="qBal">Balanced</button><button type="button" data-q="max" data-i="qMax">Max sharpness</button></div>
   <p class="seg-note" id="s_qnote"></p>
   <label class="sw"><span><span data-i="sAnim">Animations</span><small data-i="sAnimD">Pulse rings and building glow</small></span><input type="checkbox" id="s_anim"><i></i></label>
+  <h4 data-i="bodyH">Sun and Moon</h4>
+  <div class="seg" id="s_bodies"><button type="button" data-b="real" data-i="bodyReal">True size</button><button type="button" data-b="balanced" data-i="bodyBal">Balanced</button><button type="button" data-b="big" data-i="bodyBig">Large</button></div>
+  <p class="seg-note" data-i="bodyNote">In reality both are about half a degree across — true to life, but tiny on screen.</p>
+  <h4 data-i="srcH">Sources</h4>
+  <label class="sw"><span><span data-i="sSrcs">Source status</span><small data-i="sSrcsD">Which feed is live and which has failed, inside the news panel</small></span><input type="checkbox" id="s_srcs"><i></i></label>
   <h4 data-i="language">Language</h4>
   <div class="langs" id="s_lang"></div>
   <h4 data-i="contactH">Contact</h4>
@@ -1006,9 +1086,19 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   <button id="hudOut" class="zbtn out solo" hidden></button>
 </div>
 
+<section id="ms" hidden aria-label="Moon surface">
+  <canvas id="msGL"></canvas>
+  <div id="msVisor" aria-hidden="true"></div>
+</section>
+<div id="msBreath" hidden aria-hidden="true"></div>
+<div id="msHint" hidden aria-live="polite"></div>
+<button id="msOut" class="zbtn out" hidden></button>
+<button id="moonGo" hidden></button>
+<button id="crBtn" aria-expanded="false" aria-controls="globe" aria-label="Map data attribution" data-ia="crLbl">ⓘ</button>
 <button id="skyLook" class="zbtn" hidden></button>
 <button id="skyOut" class="zbtn out" hidden></button>
 <div id="skyHint" hidden aria-live="polite"></div>
+<div id="skyZoom" hidden></div>
 
 <section id="tv" hidden>
   <div class="tvbar"><span class="tvlive" data-i="tvLive"></span><span id="tvTitle"></span>
@@ -1366,6 +1456,72 @@ const L31 = {
         skyDrag: "Ziehen, um den Himmel zu drehen", skyDay: "Hier ist Tag · die Sterne kommen nach Sonnenuntergang" },
 };
 for (const k in L31) Object.assign(L[k], L31[k]);
+// [3.4] Kaynak durumu ve harita atıf rozeti
+const L32 = {
+  en: { srcH: "Sources", sSrcs: "Source status", sSrcsD: "Which feed is live and which has failed, inside the news panel", crLbl: "Map data attribution" },
+  tr: { srcH: "Kaynaklar", sSrcs: "Kaynak durumu", sSrcsD: "Hangi akış çalışıyor, hangisi düştü — haber panelinin içinde", crLbl: "Harita verisi kaynakları" },
+  it: { srcH: "Fonti", sSrcs: "Stato delle fonti", sSrcsD: "Quale feed è attivo e quale è caduto, nel pannello notizie", crLbl: "Attribuzione dei dati cartografici" },
+  ru: { srcH: "Источники", sSrcs: "Состояние источников", sSrcsD: "Какая лента работает, а какая отказала — в панели новостей", crLbl: "Атрибуция картографических данных" },
+  fr: { srcH: "Sources", sSrcs: "État des sources", sSrcsD: "Quel flux fonctionne et lequel est tombé, dans le panneau des actualités", crLbl: "Attribution des données cartographiques" },
+  es: { srcH: "Fuentes", sSrcs: "Estado de las fuentes", sSrcsD: "Qué fuente funciona y cuál ha caído, en el panel de noticias", crLbl: "Atribución de los datos del mapa" },
+  zh: { srcH: "数据源", sSrcs: "数据源状态", sSrcsD: "在新闻面板中显示哪些源正常、哪些已失效", crLbl: "地图数据来源" },
+  ar: { srcH: "المصادر", sSrcs: "حالة المصادر", sSrcsD: "أي تغذية تعمل وأيها تعطّل، داخل لوحة الأخبار", crLbl: "إسناد بيانات الخريطة" },
+  de: { srcH: "Quellen", sSrcs: "Quellenstatus", sSrcsD: "Welcher Feed läuft und welcher ausgefallen ist, im Nachrichtenbereich", crLbl: "Attribution der Kartendaten" },
+};
+for (const k in L32) Object.assign(L[k], L32[k]);
+// [3.5] Göksel cisim ölçeği ve Ay yüzeyi
+const L33 = {
+  en: { bodyH: "Sun and Moon", bodyReal: "True size", bodyBal: "Balanced", bodyBig: "Large",
+        bodyNote: "In reality both are about half a degree across \u2014 true to life, but tiny on screen.",
+        moonFind: "Press and hold the Moon to travel there", moonHint: "Drag to look around \u00b7 the Earth does not rise or set here",
+        moonBack: "Back", moonBackD: "Return to Earth" },
+  tr: { bodyH: "G\u00fcne\u015f ve Ay", bodyReal: "Ger\u00e7ek boyut", bodyBal: "Dengeli", bodyBig: "B\u00fcy\u00fck",
+        bodyNote: "Ger\u00e7ekte ikisi de yakla\u015f\u0131k yar\u0131m derece \u2014 do\u011frusu bu, ama ekranda \u00e7ok k\u00fc\u00e7\u00fck kal\u0131yor.",
+        moonFind: "Aya gitmek i\u00e7in Ay'a bas\u0131l\u0131 tut", moonHint: "\u00c7evrene bakmak i\u00e7in s\u00fcr\u00fckle \u00b7 burada D\u00fcnya ne do\u011far ne batar",
+        moonBack: "D\u00f6n", moonBackD: "D\u00fcnya'ya d\u00f6n" },
+  it: { bodyH: "Sole e Luna", bodyReal: "Dimensione reale", bodyBal: "Equilibrata", bodyBig: "Grande",
+        bodyNote: "In realt\u00e0 entrambi misurano circa mezzo grado \u2014 \u00e8 la verit\u00e0, ma sullo schermo \u00e8 minuscolo.",
+        moonFind: "Tieni premuta la Luna per andarci", moonHint: "Trascina per guardarti intorno \u00b7 qui la Terra non sorge e non tramonta",
+        moonBack: "Torna", moonBackD: "Torna sulla Terra" },
+  ru: { bodyH: "\u0421\u043e\u043b\u043d\u0446\u0435 \u0438 \u041b\u0443\u043d\u0430", bodyReal: "\u0418\u0441\u0442\u0438\u043d\u043d\u044b\u0439 \u0440\u0430\u0437\u043c\u0435\u0440", bodyBal: "\u0421\u0431\u0430\u043b\u0430\u043d\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u043e", bodyBig: "\u041a\u0440\u0443\u043f\u043d\u043e",
+        bodyNote: "\u041d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435 \u043e\u0431\u0430 \u043e\u043a\u043e\u043b\u043e \u043f\u043e\u043b\u0443\u0433\u0440\u0430\u0434\u0443\u0441\u0430 \u2014 \u044d\u0442\u043e \u0432\u0435\u0440\u043d\u043e, \u043d\u043e \u043d\u0430 \u044d\u043a\u0440\u0430\u043d\u0435 \u043a\u0440\u043e\u0448\u0435\u0447\u043d\u043e.",
+        moonFind: "\u0423\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u041b\u0443\u043d\u0443, \u0447\u0442\u043e\u0431\u044b \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c\u0441\u044f \u0442\u0443\u0434\u0430", moonHint: "\u041f\u0440\u043e\u0432\u0435\u0434\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c\u0441\u044f \u00b7 \u0437\u0434\u0435\u0441\u044c \u0417\u0435\u043c\u043b\u044f \u043d\u0435 \u0432\u0441\u0445\u043e\u0434\u0438\u0442 \u0438 \u043d\u0435 \u0437\u0430\u0445\u043e\u0434\u0438\u0442",
+        moonBack: "\u041d\u0430\u0437\u0430\u0434", moonBackD: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u043d\u0430 \u0417\u0435\u043c\u043b\u044e" },
+  fr: { bodyH: "Soleil et Lune", bodyReal: "Taille r\u00e9elle", bodyBal: "\u00c9quilibr\u00e9", bodyBig: "Grand",
+        bodyNote: "En r\u00e9alit\u00e9 ils mesurent chacun un demi-degr\u00e9 \u2014 c\u0027est exact, mais minuscule \u00e0 l\u0027\u00e9cran.",
+        moonFind: "Maintenez la Lune appuy\u00e9e pour vous y rendre", moonHint: "Glissez pour regarder autour \u00b7 ici la Terre ne se l\u00e8ve ni ne se couche",
+        moonBack: "Retour", moonBackD: "Revenir sur Terre" },
+  es: { bodyH: "Sol y Luna", bodyReal: "Tama\u00f1o real", bodyBal: "Equilibrado", bodyBig: "Grande",
+        bodyNote: "En realidad ambos miden medio grado \u2014 es lo cierto, pero en pantalla queda min\u00fasculo.",
+        moonFind: "Mant\u00e9n pulsada la Luna para viajar all\u00ed", moonHint: "Arrastra para mirar alrededor \u00b7 aqu\u00ed la Tierra no sale ni se pone",
+        moonBack: "Volver", moonBackD: "Volver a la Tierra" },
+  zh: { bodyH: "\u592a\u9633\u4e0e\u6708\u7403", bodyReal: "\u771f\u5b9e\u5927\u5c0f", bodyBal: "\u5747\u8861", bodyBig: "\u653e\u5927",
+        bodyNote: "\u5b9e\u9645\u4e0a\u4e24\u8005\u7684\u89c6\u5f84\u90fd\u7ea6\u534a\u5ea6 \u2014 \u8fd9\u662f\u771f\u5b9e\u7684\uff0c\u4f46\u5728\u5c4f\u5e55\u4e0a\u5f88\u5c0f\u3002",
+        moonFind: "\u957f\u6309\u6708\u7403\u524d\u5f80\u90a3\u91cc", moonHint: "\u62d6\u52a8\u4ee5\u73af\u987e\u56db\u5468 \u00b7 \u5728\u8fd9\u91cc\u5730\u7403\u4e0d\u5347\u4e0d\u843d",
+        moonBack: "\u8fd4\u56de", moonBackD: "\u8fd4\u56de\u5730\u7403" },
+  ar: { bodyH: "\u0627\u0644\u0634\u0645\u0633 \u0648\u0627\u0644\u0642\u0645\u0631", bodyReal: "\u0627\u0644\u062d\u062c\u0645 \u0627\u0644\u062d\u0642\u064a\u0642\u064a", bodyBal: "\u0645\u062a\u0648\u0627\u0632\u0646", bodyBig: "\u0643\u0628\u064a\u0631",
+        bodyNote: "\u0641\u064a \u0627\u0644\u062d\u0642\u064a\u0642\u0629 \u0642\u0637\u0631 \u0643\u0644 \u0645\u0646\u0647\u0645\u0627 \u0646\u0635\u0641 \u062f\u0631\u062c\u0629 \u062a\u0642\u0631\u064a\u0628\u064b\u0627 \u2014 \u0647\u0630\u0627 \u0627\u0644\u0635\u062d\u064a\u062d\u060c \u0644\u0643\u0646\u0647 \u0635\u063a\u064a\u0631 \u062c\u062f\u064b\u0627 \u0639\u0644\u0649 \u0627\u0644\u0634\u0627\u0634\u0629.",
+        moonFind: "\u0627\u0636\u063a\u0637 \u0645\u0637\u0648\u0644\u064b\u0627 \u0639\u0644\u0649 \u0627\u0644\u0642\u0645\u0631 \u0644\u0644\u0630\u0647\u0627\u0628 \u0625\u0644\u064a\u0647", moonHint: "\u0627\u0633\u062d\u0628 \u0644\u062a\u0646\u0638\u0631 \u062d\u0648\u0644\u0643 \u00b7 \u0647\u0646\u0627 \u0644\u0627 \u062a\u0634\u0631\u0642 \u0627\u0644\u0623\u0631\u0636 \u0648\u0644\u0627 \u062a\u063a\u0631\u0628",
+        moonBack: "\u0631\u062c\u0648\u0639", moonBackD: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0625\u0644\u0649 \u0627\u0644\u0623\u0631\u0636" },
+  de: { bodyH: "Sonne und Mond", bodyReal: "Wahre Gr\u00f6\u00dfe", bodyBal: "Ausgewogen", bodyBig: "Gro\u00df",
+        bodyNote: "In Wirklichkeit sind beide etwa ein halbes Grad gro\u00df \u2014 korrekt, aber auf dem Bildschirm winzig.",
+        moonFind: "Den Mond gedr\u00fcckt halten, um dorthin zu reisen", moonHint: "Ziehen, um dich umzusehen \u00b7 hier geht die Erde weder auf noch unter",
+        moonBack: "Zur\u00fcck", moonBackD: "Zur\u00fcck zur Erde" },
+};
+for (const k in L33) Object.assign(L[k], L33[k]);
+// [3.6] Ay'a gidiş görünür düğmeyle: ipucu metni de buna göre
+const L34 = {
+  en: { moonGo: "Go to the Moon", moonFind: "The Moon is up — tap “Go to the Moon” to travel there" },
+  tr: { moonGo: "Aya git", moonFind: "Ay göküzünde — gitmek için “Aya git”’e dokun" },
+  it: { moonGo: "Vai sulla Luna", moonFind: "La Luna è in cielo — tocca “Vai sulla Luna”" },
+  ru: { moonGo: "На Луну", moonFind: "Луна на небе — нажмите «На Луну»" },
+  fr: { moonGo: "Aller sur la Lune", moonFind: "La Lune est là — touchez « Aller sur la Lune »" },
+  es: { moonGo: "Ir a la Luna", moonFind: "La Luna está en el cielo — toca «Ir a la Luna»" },
+  zh: { moonGo: "前往月球", moonFind: "月亮就在天上 — 点击“前往月球”" },
+  ar: { moonGo: "الذهاب إلى القمر", moonFind: "القمر ظاهر — انقر «الذهاب إلى القمر»" },
+  de: { moonGo: "Zum Mond reisen", moonFind: "Der Mond steht am Himmel — tippe auf „Zum Mond reisen“" },
+};
+for (const k in L34) Object.assign(L[k], L34[k]);
 // [3.2] Ay
 { const M = {
   en: ["The Moon", "The real Moon, at its true position in the sky"],
@@ -1394,6 +1550,15 @@ const loc = () => ({ en: "en-GB", tr: "tr-TR", it: "it-IT", ru: "ru-RU", fr: "fr
 const $ = (id) => document.getElementById(id);
 /* Açılış: WORLDMIND logosu canlanır, sonra dünya uzaktan yaklaşır */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// [3.4] K2: akıştan gelen adresler. esc() yalnızca HTML kaçışı yapar, "javascript:" ondan sağ çıkıp tıklanınca çalışırdı.
+// Yalnızca http/https (ve görsellerde data:image) geçer; gerisi boş döner ve çağıran yer bağlantıyı hiç basmaz.
+function safeUrl(u, img) {
+  const t = String(u ?? "").trim();
+  if (!t) return "";
+  if (img && /^data:image\/(png|jpeg|jpg|gif|webp|avif);base64,[A-Za-z0-9+/=\s]+$/i.test(t)) return t;
+  try { const x = new URL(t, location.href); return (x.protocol === "https:" || x.protocol === "http:") ? x.href : ""; } catch { return ""; }
+}
+const escUrl = (u, img) => esc(safeUrl(u, img));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function toast(msg, ms = 4000) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), ms); }
 function fatal(msg) { document.getElementById("splash")?.remove(); document.body.classList.remove("splashing"); const d = document.createElement("div"); d.id = "fatal"; d.innerHTML = `<div><h2>${esc(T("fatalTitle"))}</h2><p>${esc(msg)}</p></div>`; document.body.appendChild(d); }
@@ -1767,9 +1932,18 @@ async function txPump() {
   txRun = false;
   if (TXQ.size) txT = setTimeout(() => txIdle(txPump), ok ? 450 : 6000);
 }
+// [3.4] P4: ~450 ms'de bir tüm belgeyi taramak yerine yalnızca data-tx taşıyabilen kaplara bakılır.
+const TX_ROOTS = ["list", "card", "hudName", "picker", "sher"];
 function txPatch() {
   txIdle(() => {
-    for (const el of document.querySelectorAll("[data-tx]")) {
+    txVer++;                                                  // [3.4] P2: arama önbellekleri tazelensin
+    const els = [];
+    for (const id of TX_ROOTS) {
+      const r = document.getElementById(id); if (!r) continue;
+      if (r.dataset && r.dataset.tx) els.push(r);
+      for (const e of r.querySelectorAll("[data-tx]")) els.push(e);
+    }
+    for (const el of els) {
       const s = TXO.get(el.dataset.tx); if (s == null) continue;
       const t = TXS.get(s); if (t === undefined) continue;
       const v = t || s; if (el.textContent !== v) { el.textContent = v; if (el.id === "hudName") el.lang = t ? LANG : "en"; }
@@ -1812,8 +1986,18 @@ try {
 const scene = viewer.scene;
 scene.globe.show = true; scene.globe.baseColor = Cesium.Color.fromCssColorString("#1d3b57");
 // [2.2] Ekran kartı bağlantısı koparsa (zayıf telefonlarda olabilir) siyah ekranda kalmak yerine sayfa kendini yeniler
-scene.canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); try { sessionStorage.setItem("wm-skip-splash", "1"); } catch {} setTimeout(() => location.reload(), 600); }, false);
-scene.renderError.addEventListener(() => { try { sessionStorage.setItem("wm-skip-splash", "1"); } catch {} setTimeout(() => location.reload(), 1200); });
+// [3.4] H3: yeniden yükleme sayılır. Hata kalıcıysa (sürücü, bellek) sayfa sonsuza dek kendini yenilemek yerine durur ve sebebini söyler.
+function glLost(delay) {
+  let n = 0;
+  try { n = (parseInt(sessionStorage.getItem("wm-gl-retry") || "0", 10) || 0) + 1; sessionStorage.setItem("wm-gl-retry", String(n)); } catch { n = 1; }
+  if (n > 3) { try { sessionStorage.removeItem("wm-gl-retry"); } catch {} fatal(T("noGL")); return; }
+  try { sessionStorage.setItem("wm-skip-splash", "1"); } catch {}
+  setTimeout(() => location.reload(), delay);
+}
+scene.canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); glLost(600); }, false);
+scene.renderError.addEventListener(() => glLost(1200));
+// On saniye sorunsuz çizildiyse sayaç sıfırlanır: ileride tek seferlik bir kopma yine 3 hak bulur.
+setTimeout(() => { try { sessionStorage.removeItem("wm-gl-retry"); } catch {} }, 10000);
 // [2.6] Dünya görüntüsü: sınırlara karşı yedekli zincir. Ekran hiçbir zaman boş kalmaz.
 //  1) Esri uydu görüntüsü (sokak seviyesine kadar net; Cesium'un aylık oturum hakkını HARCAMAZ)
 //  2) Esri çalışmazsa Bing (Cesium üzerinden)
@@ -1849,7 +2033,7 @@ const PROFILE = (() => { const coarse = matchMedia("(pointer:coarse)").matches, 
 const DPR = window.devicePixelRatio || 1;
 const RES = Math.min(DPR, { phone: 1.0, tablet: 1.25, desktop: 1.5 }[PROFILE]);
 // [2.6] Ayarlar: cihazda hatırlanır
-const SET = Object.assign({ clouds: true, night: true, sun: true, moon: true, atmo: true, rotate: PROFILE !== "phone", quality: "balanced", anim: true, sound: true },
+const SET = Object.assign({ clouds: true, night: true, sun: true, moon: true, atmo: true, rotate: PROFILE !== "phone", quality: "balanced", anim: true, sound: true, srcs: false, bodies: "balanced" },
   (() => { try { return JSON.parse(localStorage.getItem("wm-set") || "{}") || {}; } catch { return {}; } })());
 const QUAL = {
   saver: { res: 1.0, sse: 2.4, tiles: 20, cache: 120, note: "qSaverN" },
@@ -1934,10 +2118,27 @@ function fxFade() {
 viewer.camera.changed.addEventListener(fxFade);
 // [3.2] Ay: Cesium'un kendi Moon katmanı. Konumu takvimden (viewer.clock) hesaplanır — syncSun() dakikada bir
 //      saati güncellediği için Ay da gerçek zamanlı doğru yerde durur. Dokusu NASA görüntüsüdür ve kütüphaneyle gelir.
-try { scene.moon = new Cesium.Moon({ onlySunLighting: true }); } catch {}
+// [3.5] Göksel cisim ölçeği. Gerçekte Ay da Güneş de yaklaşık yarım derece: ekranda bir bezelye kadar.
+// Gerçek ölçek doğru ama okunaksız; planetaryum yazılımlarının yaptığı gibi açısal çapı büyütüyoruz.
+// Konum, evre, aydınlanma — hepsi gerçek kalır, yalnızca görünen boyut çarpanla ölçeklenir.
+// [3.6] 4× hâlâ bezelye gibiydi. 8× ≈ 4,2° (ekran yüksekliğinin ~%7’si), 20× ≈ 10,4° (~%17): artık Ay gibi duruyor.
+const BODY_K = { real: 1, balanced: 8, big: 20 };
+const bodyK = () => BODY_K[SET.bodies] || 8;
+const MOON_R = 1737400;
+function buildMoon() {
+  try {
+    const r = MOON_R * bodyK();   // Ay gerçek uzaklığında durur; yalnızca küresi büyür, yani açısal çapı çarpanla artar
+    const old = scene.moon;
+    scene.moon = new Cesium.Moon({ onlySunLighting: true, ellipsoid: new Cesium.Ellipsoid(r, r, r) });
+    scene.moon.show = !!SET.moon;
+    try { if (old && !old.isDestroyed()) old.destroy(); } catch {}
+  } catch {}
+}
+buildMoon();
 function applyLook() {
   scene.globe.enableLighting = !!SET.sun; scene.skyAtmosphere.show = !!SET.atmo;
   if (scene.moon) scene.moon.show = !!SET.moon;
+  document.documentElement.style.setProperty("--bodyK", String(bodyK()));
   fxAlphaLast = -1; fxFade(); scene.requestRender();
 }
 applyLook();
@@ -2116,7 +2317,19 @@ function purgeOld() {
       dropFx(ev); S.events.delete(id); const e = S.ents.get(id); if (e) ds.entities.remove(e); S.ents.delete(id); gone++;
     }
   } finally { ds.entities.resumeEvents(); }
+  pruneCaches();
   if (gone) { if (S.sel && !S.events.has(S.sel)) { S.sel = null; clearLinks(); placeCard(); } applyFilter(); }
+}
+// [3.4] P1: bunların hiçbiri kendiliğinden küçülmüyordu. Uygulama günlerce açık kalınca bellek tek yönlü büyüyordu.
+function pruneCaches() {
+  const now = Date.now();
+  for (const [id, t] of S.fresh) if (t < now) S.fresh.delete(id);                 // süresi geçmiş "YENİ" işaretleri
+  if (DONE.size > 1200) for (const id of DONE) if (!S.events.has(id)) DONE.delete(id);
+  if (REF.size > 1200) for (const id of REF.keys()) if (!S.events.has(id)) REF.delete(id);
+  // Çeviri kimlikleri: Map ekleme sırasını korur, en eskiler düşer. Ekranda kalan eski bir kimlik
+  // yalnızca bir daha yamalanmaz — liste zaten yeniden çizildiğinde yenisini alır.
+  while (TXID.size > 4000) { const k = TXID.keys().next().value, id = TXID.get(k); TXID.delete(k); TXO.delete(id); }
+  { const k = Object.keys(INSTC); if (k.length > 400) { for (const x of k.slice(0, k.length - 400)) delete INSTC[x]; saveINST(); } }
 }
 /* Haberdeki kişi ya da kurum → o kişinin/kurumun binası (metinde açıkça başka bir olay yeri yoksa) */
 const ANCHORS = [
@@ -2307,7 +2520,7 @@ for (const k in CATC) {
 const phase = (off, per) => ((((performance.now() - T0) / 1000 + off) % per) + per) % per / per;
 // [2.3] Eskiden her olay parıltısı fxCount'u artırıyor ve requestRenderMode'u kapatıyordu → olay varsa harita SÜREKLİ (her karede) çiziliyordu.
 // Şimdi: istek-üzerine çizim hep açık. Animasyonlar (nefes, halka, bina ışığı) için ayrı, düşük frekanslı tik; sayaç yerine gerçek durumdan hesaplanır.
-let fxCount = 0, fxTimer = 0;
+let fxTimer = 0;   // [3.4] H5: fxCount hiçbir kararı etkilemiyordu, kaldırıldı
 const FX_MS = PROFILE === "phone" ? 100 : 66;                   // telefonda 10, diğerlerinde 15 kare/sn animasyon yeter
 function fxNeeded() {
   if (document.hidden) return false;
@@ -2344,10 +2557,10 @@ function syncRing(ev) {
       scale: new Cesium.CallbackProperty(() => 0.12 + phase(off + k * 3.2, 3.2) * 0.8, false),
       color: new Cesium.CallbackProperty(() => CATC[ev.cat].withAlpha(Math.pow(1 - phase(off + k * 3.2, 3.2), 1.8)), false) } }));
     ev.ring.forEach((w) => (w.show = matches(ev)));
-    fxCount++; RINGS++; syncRender();
+    RINGS++; syncRender();
   } else if (!want && ev.ring) dropRing(ev);
 }
-function dropRing(ev) { if (!ev.ring) return; ev.ring.forEach((w) => viewer.entities.remove(w)); ev.ring = null; fxCount--; RINGS--; syncRender(); }
+function dropRing(ev) { if (!ev.ring) return; ev.ring.forEach((w) => viewer.entities.remove(w)); ev.ring = null; RINGS--; syncRender(); }
 setInterval(() => { for (const ev of S.events.values()) if (ev.ring || isRecent(ev)) syncRing(ev); }, 20000);
 
 /* 1b) dünya görünümü: her olayın etrafında kendi renginde nefes alan yumuşak parıltı */
@@ -2358,9 +2571,9 @@ function addHalo(ev) {
     disableDepthTestDistance: Number.POSITIVE_INFINITY, distanceDisplayCondition: new Cesium.DistanceDisplayCondition(60000, Number.MAX_VALUE),
     scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 2.2e7, 0.55) } });
   ev.halo.show = matches(ev);
-  fxCount++; syncRender();
+  syncRender();
 }
-function dropHalo(ev) { if (!ev.halo) return; viewer.entities.remove(ev.halo); ev.halo = null; fxCount--; syncRender(); }
+function dropHalo(ev) { if (!ev.halo) return; viewer.entities.remove(ev.halo); ev.halo = null; syncRender(); }
 
 /* 2) yakın görünüm: mahalle kızarıp söner
    Kırmızı ışık doğrudan 3D binaların ve sokakların kendi görüntüsüne, ekran kartında işlenir (CustomShader).
@@ -2442,7 +2655,14 @@ function lazySave(key, fn) {
   const go = () => { LAZY.delete(key); fn(); };
   LAZY.set(key, setTimeout(() => { (window.requestIdleCallback ? requestIdleCallback(go, { timeout: 4000 }) : go()); }, 20000));
 }
-addEventListener("pagehide", () => { for (const [k, t] of LAZY) clearTimeout(t); LAZY.clear(); try { localStorage.setItem("wm-geo", JSON.stringify(PH)); localStorage.setItem("wm-deep", JSON.stringify(DEEPC)); localStorage.setItem("wm-inst", JSON.stringify(INSTC)); } catch {} });
+// [3.4] H6: pagehide iOS'ta çoğu zaman hiç gelmez; sekme arkaya düşer düşmez de yazılır.
+function flushLazy() {
+  for (const [k, t] of LAZY) clearTimeout(t);
+  LAZY.clear();
+  try { localStorage.setItem("wm-geo", JSON.stringify(PH)); localStorage.setItem("wm-deep", JSON.stringify(DEEPC)); localStorage.setItem("wm-inst", JSON.stringify(INSTC)); } catch {}
+}
+addEventListener("pagehide", flushLazy);
+document.addEventListener("visibilitychange", () => { if (document.hidden) flushLazy(); });
 const savePH = () => lazySave("ph", () => { try { const k = Object.keys(PH); if (k.length > 3000) for (const x of k.slice(0, 1000)) delete PH[x]; localStorage.setItem("wm-geo", JSON.stringify(PH)); } catch {} });
 const km = (a, b) => { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r;
   const h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
@@ -2847,12 +3067,19 @@ function hasNet(ev) {
   if (ev._netK !== k) { ev._netK = k; try { ev._net = relatedPlaces(ev).length > 0; } catch { ev._net = false; } }
   return ev._net;
 }
+// [3.4] P2: arama sırasında her olay için dize birleştirip normalize etmek yüzlerce olayda pahalıydı.
+// Sonuç olayın üstünde saklanır; çeviri kuyruğu bir şey yamaladığında txVer artar ve önbellek kendiliğinden tazelenir.
+let txVer = 0;
+function searchKey(ev) {
+  if (ev._sv !== txVer) { ev._sv = txVer; ev._sk = norm(ev.title + " " + titleOf(ev) + " " + placeOf(ev) + " " + (ev.place || "")); }
+  return ev._sk;
+}
 function matches(ev) {
   if (S.solo && ev.cat !== S.solo) return false;
   if (S.onlyActive && !ev.aktif) return false;
   if (S.onlyNet && !hasNet(ev)) return false;
   if (!S.q) return true;
-  return norm(ev.title + " " + titleOf(ev) + " " + placeOf(ev) + " " + (ev.place || "")).includes(S.q);
+  return searchKey(ev).includes(S.q);
 }
 function applyFilter() {
   ds.entities.suspendEvents();
@@ -2896,6 +3123,7 @@ $("chips").addEventListener("click", (e) => {
   applyFilter();
 });
 function renderSrcs() {
+  if ($("srcs").hidden) return;   // [3.4] H4: kapalıyken boşuna DOM kurulmaz
   $("srcs").innerHTML = Object.entries(S.src).map(([k, s]) => {
     const sym = s.durum === "ok" ? "●" : s.durum === "err" ? "✕" : "○";
     const txt = s.durum === "ok" ? `${s.n} · ${hhmm(s.t)}` : s.durum === "err" ? (s.msg || T("err")) : T("loading") + " " + (s.msg || "");
@@ -2918,16 +3146,16 @@ function descOf(ev) {
   const d = [ev.description, ev.ctx].find((x) => x && norm(x).slice(0, 50) !== t) || "";
   return d.replace(/\s+/g, " ").trim().slice(0, 240);
 }
-let pressing = false;
+let listSig = "";   // [3.4] P3
 function renderListNow() {
   const n = [...S.events.values()].filter(matches).length;
   $("pcount").textContent = n ? String(n) : "";
-  if (PANEL.hidden || pressing) return;
-  const arr = [...S.events.values()].filter(matches).sort((a, b) => sortKey(b) - sortKey(a)).slice(0, 300);
+  if (PANEL.hidden) return;
+  const arr = [...S.events.values()].filter(matches).sort((a, b) => sortKey(b) - sortKey(a)).slice(0, 150);   // [3.4] P3: 300 → 150
   const Lst = $("list");
-  if (!arr.length) { Lst.innerHTML = `<li class="empty">${S.events.size ? T("emptyView") : T("loadingData")}</li>`; return; }   // [2.4] liste yenilemesi karta dokunmaz
+  if (!arr.length) { const e = `<li class="empty">${S.events.size ? T("emptyView") : T("loadingData")}</li>`; if (listSig !== e) { Lst.innerHTML = e; listSig = e; } return; }   // [2.4] liste yenilemesi karta dokunmaz
   const keepTop = Lst.scrollTop;                                // [2.3] yeniden çizimde kaydırma yeri korunur
-  Lst.innerHTML = arr.map((ev) => {
+  const html = arr.map((ev) => {
     const d = descOf(ev);
     return `<li data-li="${esc(ev.id)}"${S.sel === ev.id ? ' class="open"' : ""}><button data-id="${esc(ev.id)}" ${S.sel === ev.id ? 'aria-current="true"' : ""} style="--c:${CATS[ev.cat]}">
     <span class="k"></span>
@@ -2935,7 +3163,9 @@ function renderListNow() {
       <span class="m">${ev.domain || ev.source ? `<b class="src">${esc(ev.domain || ev.source)}</b> · ` : ""}${ev.aktif ? `<span class="st on">${T("on")}</span> · ` : ""}${esc(T(ev.cat))}${placeParts(ev).length ? " · " + placeH(ev) : ""}</span></span>
     <span class="ago">${ev.live ? `<b class="new">${T("nw")}</b>` : ""}${esc(when(ev))}</span></button></li>`;
   }).join("");
-  Lst.scrollTop = keepTop;
+  // [3.4] P3: liste dakikada bir, her kaynak turunda ve her çeviri yamasında yeniden çiziliyordu.
+  // İçerik aynıysa innerHTML'e hiç dokunulmaz: ~1.500 düğümlük ayrıştırma ve yeniden düzen atlanır.
+  if (listSig !== html) { Lst.innerHTML = html; listSig = html; Lst.scrollTop = keepTop; }
   placeCard();
 }
 // [2.4] Elde tutulan kart: yalnızca YENİ bir haber seçilince ya da ekran/yaklaşma durumu değişince yerleşir.
@@ -3054,7 +3284,8 @@ $("card").addEventListener("click", (e) => {
   const ev = S.events.get(S.sel); if (ev) engage(ev);
 });
 function closeSel() { $("card").hidden = true; $("card").classList.remove("held"); selMark.show = false; S.sel = null; cardKey = ""; document.body.classList.remove("cardon"); clearLinks(); renderList(); scene.requestRender(); syncHudOut(); }
-$("q").addEventListener("input", (e) => { S.q = norm(e.target.value.trim()); applyFilter(); });
+// [3.4] P2: her tuşta tüm olay kümesi süzülmesin
+{ let qt = 0; $("q").addEventListener("input", (e) => { const v = norm(e.target.value.trim()); clearTimeout(qt); qt = setTimeout(() => { S.q = v; applyFilter(); }, 150); }); }
 /* Haber paneli: üst bardaki düğmeyle açılır/kapanır, başlığından tutulup ekranda istenen yere taşınır */
 const PANEL = $("panel");
 function placePanel(pos) {
@@ -3088,12 +3319,13 @@ addEventListener("resize", () => { if (!PANEL.hidden) panelPos = placePanel(pane
 $("listBtn").addEventListener("click", toggleSheet);
 // [2.6] Ayarlar paneli
 (() => {
-  const box = $("settings"), btn = $("setBtn"), KEYS = ["clouds", "night", "sun", "moon", "atmo", "rotate", "anim", "sound"];
+  const box = $("settings"), btn = $("setBtn"), KEYS = ["clouds", "night", "sun", "moon", "atmo", "rotate", "anim", "sound", "srcs"];
   const save = () => { try { localStorage.setItem("wm-set", JSON.stringify(SET)); } catch {} };
   const sync = () => {
     for (const k of KEYS) $("s_" + k).checked = !!SET[k];
     $("s_night").disabled = !SET.sun; $("s_night").closest(".sw").classList.toggle("off", !SET.sun);
     box.querySelectorAll("[data-q]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.q === SET.quality)));
+    box.querySelectorAll("[data-b]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.b === SET.bodies)));
     $("s_qnote").textContent = T(qual().note);
   };
   const show = (o) => { box.hidden = !o; btn.setAttribute("aria-pressed", String(o)); if (o) sync(); };
@@ -3105,9 +3337,13 @@ $("listBtn").addEventListener("click", toggleSheet);
     if (k === "anim") { for (const ev of S.events.values()) { if (!SET.anim) dropRing(ev); else syncRing(ev); } updateGlows(); syncRender(); }
     if (k === "rotate") idleSpinFrom = performance.now() + 1200;
     if (k === "sound") sound.set(SET.sound);
+    if (k === "srcs") { $("srcs").hidden = !SET.srcs; renderSrcs(); }   // [3.4] H4
     applyLook();
   });
   box.addEventListener("click", (e) => { const b = e.target.closest("[data-q]"); if (!b) return; SET.quality = b.dataset.q; save(); sync(); applyQuality(); });
+  // [3.5] Göksel cisim ölçeği: Ay yeniden kurulur, Güneş sprite'ı bir sonraki karede kendiliğinden ölçeklenir
+  box.addEventListener("click", (e) => { const b = e.target.closest("[data-b]"); if (!b || b.dataset.b === SET.bodies) return;
+    SET.bodies = b.dataset.b; save(); sync(); buildMoon(); applyLook(); scene.requestRender(); });
   // [2.2] dil: seçilince ayar kaydedilir ve sayfa yeni dilde yeniden açılır (giriş tekrar oynamaz)
   $("s_lang").innerHTML = Object.entries(LANGS).map(([k, n]) => `<button type="button" data-lang="${k}" lang="${k}" aria-pressed="${k === LANG}">${n}</button>`).join("");
   $("s_lang").addEventListener("click", (e) => { const b = e.target.closest("[data-lang]"); if (!b || b.dataset.lang === LANG) return;
@@ -3192,10 +3428,10 @@ function mediaHTML(ev) {
   const i = Math.min(ev.mi || 0, m.length - 1), cur = m[i];
   const lab = cur.kind === "wiki" ? cur.cap : (cur.cap || T("photoNews"));
   return `<div class="media" id="media">
-    <figure class="hero"><img src="${esc(cur.src)}" alt="${esc(cur.cap || ev.title)}" referrerpolicy="no-referrer" loading="eager" data-bad="${i}">
-      <figcaption><span class="mk">${esc(T(cur.kind === "wiki" ? "photoWho" : "photoNews"))}</span>${cur.kind === "wiki" || cur.cap ? (cur.cap ? txSpan(lab, "cap") : esc(lab)) : ""}${cur.credit ? `<span class="cred">${cur.link ? `<a href="${esc(cur.link)}" target="_blank" rel="noopener">${esc(cur.credit)}</a>` : esc(cur.credit)}</span>` : ""}</figcaption>
+    <figure class="hero"><img src="${escUrl(cur.src, 1)}" alt="${esc(cur.cap || ev.title)}" referrerpolicy="no-referrer" loading="eager" data-bad="${i}">
+      <figcaption><span class="mk">${esc(T(cur.kind === "wiki" ? "photoWho" : "photoNews"))}</span>${cur.kind === "wiki" || cur.cap ? (cur.cap ? txSpan(lab, "cap") : esc(lab)) : ""}${cur.credit ? `<span class="cred">${safeUrl(cur.link) ? `<a href="${escUrl(cur.link)}" target="_blank" rel="noopener">${esc(cur.credit)}</a>` : esc(cur.credit)}</span>` : ""}</figcaption>
       ${m.length > 1 ? `<span class="cnt">${i + 1} / ${m.length}</span>` : ""}</figure>
-    ${m.length > 1 ? `<div class="thumbs">${m.map((x, j) => `<button data-mi="${j}" ${j === i ? 'aria-current="true"' : ""}><img src="${esc(x.src)}" alt="" referrerpolicy="no-referrer" loading="lazy" data-bad="${j}"></button>`).join("")}</div>` : ""}
+    ${m.length > 1 ? `<div class="thumbs">${m.map((x, j) => `<button data-mi="${j}" ${j === i ? 'aria-current="true"' : ""}><img src="${escUrl(x.src, 1)}" alt="" referrerpolicy="no-referrer" loading="lazy" data-bad="${j}"></button>`).join("")}</div>` : ""}
   </div>`;
 }
 function renderMedia(ev) {
@@ -3233,11 +3469,11 @@ function renderCard(ev) {
       ${ev.why?.length ? `<span class="why">${esc(T("why"))}: ${ev.why.filter((w) => w && (w[0] === "summit" || !isEventTitle(w[1]))).map(([k, v]) => esc(T("why_" + k, txGet(v, "place")))).join(" · ")}</span>` : ""}
     </div>
     <div class="sher" id="sher"${sherHTML(ev) ? "" : " hidden"}>${sherHTML(ev)}</div>
-    ${arts.length > 1 ? `<ul class="arts">${arts.map((a, i) => `<li><a href="${esc(a.url)}" target="_blank" rel="noopener">${a.title ? txSpan(a.title, "title") : esc(a.url)}<small>${esc(hostOf(a.url))}${a.time ? " · " + esc(ago(a.time)) : ""}</small></a></li>`).join("")}</ul>` : ""}
+    ${arts.length > 1 ? `<ul class="arts">${arts.map((a, i) => `<li><a href="${escUrl(a.url)}" target="_blank" rel="noopener">${a.title ? txSpan(a.title, "title") : esc(hostOf(a.url))}<small>${esc(hostOf(a.url))}${a.time ? " · " + esc(ago(a.time)) : ""}</small></a></li>`).join("")}</ul>` : ""}
     <div class="acts">
       <button class="act" id="moreBtn" aria-expanded="${!!ev.moreOpen}">${esc(T(ev.moreOpen ? "less" : "more"))}</button>
       <button class="act${ev.video ? " hasvid" : ""}" id="lvBtn" aria-expanded="${!!ev.lvOpen}">${esc(T("lvBtn"))}</button>
-      ${ev.url ? `<a class="act" href="${esc(ev.url)}" target="_blank" rel="noopener">${esc(T("openSrc"))}</a>` : ""}
+      ${safeUrl(ev.url) ? `<a class="act" href="${escUrl(ev.url)}" target="_blank" rel="noopener">${esc(T("openSrc"))}</a>` : ""}
     </div>
     ${ev.moreOpen ? `<div class="more" id="more">${moreHTML(ev)}</div>` : ""}
     ${ev.lvOpen ? `<div class="more">${liveHTML(ev)}</div>` : ""}
@@ -3278,7 +3514,7 @@ const CHANNELS = [
 const placeName = (ev) => placeName0(ev) || ev.g?.en || (ev.place || "").split(",")[0] || "";
 function liveHTML(ev) {
   let h = "";
-  if (ev.video) h += `<h3>${esc(T("lvVidT"))}</h3><button class="act" data-tv="hls" data-src="${esc(ev.video)}" data-t="${esc(titleOf(ev))}">${esc(T("lvVid"))}</button>`;
+  if (safeUrl(ev.video)) h += `<h3>${esc(T("lvVidT"))}</h3><button class="act" data-tv="hls" data-src="${escUrl(ev.video)}" data-t="${esc(titleOf(ev))}">${esc(T("lvVid"))}</button>`;
   h += `<h3>${esc(T("lvNews"))}</h3><div class="chans">${CHANNELS.map((c) => `<button class="act" data-tv="ch" data-id="${c.id}" data-t="${esc(c.n)}">${esc(c.n)}</button>`).join("")}</div>`;
   return h;
 }
@@ -3298,14 +3534,15 @@ async function openTV(kind, id, title) {
     box.innerHTML = `<iframe src="https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(id)}&autoplay=1&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
     link = "https://www.youtube.com/channel/" + encodeURIComponent(id) + "/live";
   } else {
+    const src = safeUrl(id); if (!src) { $("tv").hidden = true; return; }   // [3.4] K2
     const v = document.createElement("video"); v.controls = true; v.autoplay = true; v.playsInline = true; box.appendChild(v);
-    if (v.canPlayType("application/vnd.apple.mpegurl")) v.src = id;
+    if (v.canPlayType("application/vnd.apple.mpegurl")) v.src = src;
     else {
       if (!hlsLib) hlsLib = new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"; sc.onload = () => res(window.Hls); sc.onerror = rej; document.head.appendChild(sc); });
-      try { const Hls = await hlsLib; const h = new Hls(); h.loadSource(id); h.attachMedia(v); } catch { v.src = id; }
+      try { const Hls = await hlsLib; const h = new Hls(); h.loadSource(src); h.attachMedia(v); } catch { v.src = src; }
     }
   }
-  $("tvOpen").hidden = !link; $("tvOpen").href = link || "#";
+  const safe = safeUrl(link); $("tvOpen").hidden = !safe; $("tvOpen").href = safe || "#";
 }
 $("tvClose").addEventListener("click", () => { $("tvBody").innerHTML = ""; $("tv").hidden = true; });
 
@@ -3322,17 +3559,17 @@ function moreHTML(ev) {
   const showSum = sum.length > 40 && norm(sum).slice(0, 50) !== norm(ev.title).slice(0, 50);
   h += `<div class="sec"><h3>${esc(T("fromArticle"))}${ev.domain ? " · " + esc(ev.domain) : ""}</h3>`;
   if (showSum) h += `<p class="lede">${txSpan(cutAt(sum, 320), "para")}</p>`;
-  if (ev.url) h += `<p><a class="gosrc" href="${esc(ev.url)}" target="_blank" rel="noopener">${esc(T("readAt", hostOf(ev.url) || ev.domain || ev.source || ""))}</a></p>`;
+  if (safeUrl(ev.url)) h += `<p><a class="gosrc" href="${escUrl(ev.url)}" target="_blank" rel="noopener">${esc(T("readAt", hostOf(ev.url) || ev.domain || ev.source || ""))}</a></p>`;
   h += `</div>`;
   // 2) Arka plan (Wikipedia)
   h += `<div class="sec"><h3>${esc(T("bg"))}</h3>`;
   if (!m) h += `<span class="wait">${esc(T("searching"))}</span>`;
   else if (!m.length) h += `<p class="wait">${esc(T("noMore"))}</p>`;
-  else h += m.map((w) => `<div class="wk"><b>${esc(w.title)}</b><p>${esc(cutAt(w.text, 700))}</p><a href="${esc(w.url)}" target="_blank" rel="noopener">${esc(T("readWiki"))}</a></div>`).join("");
+  else h += m.map((w) => `<div class="wk"><b>${esc(w.title)}</b><p>${esc(cutAt(w.text, 700))}</p><a href="${escUrl(w.url)}" target="_blank" rel="noopener">${esc(T("readWiki"))}</a></div>`).join("");
   h += `</div>`;
   if (near.length) h += `<div class="sec"><h3>${esc(T("nearby"))}</h3><ul>${near.map((o) => `<li><button data-go="${esc(o.id)}">${titleH(o)}<small>${esc(T(o.cat))} · ${esc(T(o.aktif ? "on" : "off"))} · ${esc(when(o))}</small></button></li>`).join("")}</ul></div>`;
   const arts = ev.articles?.length ? ev.articles : ev.url ? [{ url: ev.url, title: ev.domain || ev.source }] : [];
-  if (arts.length) h += `<div class="sec"><h3>${esc(T("srcs"))}</h3><ul>${arts.slice(0, 10).map((a) => `<li><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(hostOf(a.url) || a.title)} ↗</a></li>`).join("")}</ul></div>`;
+  if (arts.length) h += `<div class="sec"><h3>${esc(T("srcs"))}</h3><ul>${arts.slice(0, 10).map((a) => `<li><a href="${escUrl(a.url)}" target="_blank" rel="noopener">${esc(hostOf(a.url) || a.title)} ↗</a></li>`).join("")}</ul></div>`;
   return h;
 }
 // [3.0] loadRelated kaldırıldı: başka yayıncıların metinlerinden alıntı yapılmıyor.
@@ -3829,7 +4066,9 @@ async function getText(url, ms = 15000) {
   finally { clearTimeout(t); }
 }
 const RSSC = new Map();   // akış → son başarılı öğeler (bir akış geçici düşerse öncekiler kalır)
-const stripHtml = (h) => { const d = document.createElement("div"); d.innerHTML = h || ""; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+// [3.4] K1: ayrık bir div'e innerHTML atamak öğeleri GERÇEKTEN kurar (img ağa çıkar, onerror tetiklenir).
+// DOMParser belgesinin tarama bağlamı yoktur: hiçbir kaynak yüklenmez, hiçbir işleyici çalışmaz.
+const stripHtml = (h) => (new DOMParser().parseFromString(String(h || ""), "text/html").body.textContent || "").replace(/\s+/g, " ").trim();
 async function loadRSS() {
   const seenTitles = new Set([...S.events.values()].filter((e) => e.src !== "rss").map((e) => norm(e.title).slice(0, 60)));
   let ok = 0;
@@ -4040,6 +4279,16 @@ function sunPosWC() {
   let m = Cesium.Transforms.computeIcrfToFixedMatrix(t, _m3); if (!m) m = Cesium.Transforms.computeTemeToPseudoFixedMatrix(t, _m3);
   return Cesium.Matrix3.multiplyByVector(m, _sp, new Cesium.Cartesian3());
 }
+// [3.5] Ay'ın Dünya merkezli gerçek konumu — Güneş'inkiyle aynı yoldan
+const _mp = new Cesium.Cartesian3(), _m3b = new Cesium.Matrix3();
+function moonPosWC() {
+  const t = viewer.clock.currentTime;
+  Cesium.Simon1994PlanetaryPositions.computeMoonPositionInEarthInertialFrame(t, _mp);
+  let m = Cesium.Transforms.computeIcrfToFixedMatrix(t, _m3b); if (!m) m = Cesium.Transforms.computeTemeToPseudoFixedMatrix(t, _m3b);
+  return Cesium.Matrix3.multiplyByVector(m, _mp, new Cesium.Cartesian3());
+}
+// Güneşin görünen yarıçapı (rad): 695.700 km / 149,6 milyon km, çarpanla ölçeklenir
+const SUN_ANG = 0.004652;
 const sunEl = $("sunEarth");
 function placeSun() {
   if (SUN.mode !== "earth") return;
@@ -4053,10 +4302,48 @@ function placeSun() {
     vis = sx > -80 && sx < W + 80 && sy > -80 && sy < H + 80; }
   SUN.scr = vis ? { x: sx, y: sy } : null;
   if (sunEl.hidden === vis) sunEl.hidden = !vis;
-  if (vis) sunEl.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+  if (vis) {
+    // [3.5] Sprite 256 px tuvalde yarıçapı 10,24 px bir disk çiziyor. Ekranda olması gereken yarıçapı
+    // gerçek açısal boyuttan hesaplayıp ölçekliyoruz: üç seçenek de aynı fizikten türüyor.
+    const fr = cam.frustum, tanY2 = Math.tan(fr.fovy / 2), H2 = scene.canvas.clientHeight || innerHeight;
+    const k = Math.max(0.12, Math.tan(SUN_ANG * bodyK()) * (H2 / 2) / tanY2 / 10.24);
+    sunEl.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px) scale(${k.toFixed(3)})`;
+  }
   if (AY.where === "earth" && AY.state) { $("ayah").style.opacity = vis ? "" : "0"; if (vis) ayPos(sx, sy); }
 }
 scene.postRender.addEventListener(placeSun);
+// [3.5] Ay ekranda nerede? Yalnızca "Ay'a basılı tut" hedefi için; Ay'ın kendisini Cesium çiziyor.
+const MOON = { scr: null, ang: 0, hinted: false };
+function placeMoon() {
+  if (SUN.mode !== "earth" || !SET.moon || !scene.moon) {
+    MOON.scr = null;
+    const g = $("moonGo"); if (g && !g.hidden) g.hidden = true;   // [3.6] yoksa Güneş sahnesinde ekranda kalıyor
+    return;
+  }
+  const cam = viewer.camera, cp = cam.positionWC, p = moonPosWC();
+  const v = Cesium.Cartesian3.subtract(p, cp, new Cesium.Cartesian3());
+  const dist = Cesium.Cartesian3.magnitude(v);
+  Cesium.Cartesian3.normalize(v, v);
+  const z = Cesium.Cartesian3.dot(v, cam.directionWC);
+  let vis = z > 0.05, sx = 0, sy = 0;
+  if (vis) { _ray.origin = cp; _ray.direction = v; const hit = Cesium.IntersectionTests.rayEllipsoid(_ray, Cesium.Ellipsoid.WGS84); if (hit && hit.stop > 0 && hit.start < dist) vis = false; }
+  const fr = cam.frustum, tanY = Math.tan(fr.fovy / 2), tanX = tanY * fr.aspectRatio, W = scene.canvas.clientWidth, H = scene.canvas.clientHeight;
+  if (vis) {
+    sx = (Cesium.Cartesian3.dot(v, cam.rightWC) / z / tanX * 0.5 + 0.5) * W;
+    sy = (0.5 - Cesium.Cartesian3.dot(v, cam.upWC) / z / tanY * 0.5) * H;
+    vis = sx > -60 && sx < W + 60 && sy > -60 && sy < H + 60;
+  }
+  MOON.ang = vis ? Math.max(26, Math.atan((MOON_R * bodyK()) / dist) * (H / 2) / tanY) : 0;
+  MOON.scr = vis ? { x: sx, y: sy } : null;
+  // [3.6] Görünür düğme: Ay'ın hemen altında, diski kapatmadan
+  { const g = $("moonGo"), ok = vis && !MOONS.on && !document.body.classList.contains("moonmode");
+    if (g) {
+      if (g.hidden !== !ok) g.hidden = !ok;
+      if (ok) { g.style.left = sx.toFixed(1) + "px"; g.style.top = (sy + MOON.ang + 12).toFixed(1) + "px"; }
+    } }
+  if (vis && !MOON.hinted && !document.body.classList.contains("moonmode")) moonHintOnce();
+}
+scene.postRender.addEventListener(placeMoon);
 
 /* --- basılı tutma halkası ve dokunuş sayacı (ortak) --- */
 const holdRing = $("holdRing");
@@ -4305,7 +4592,9 @@ function glProgram(gl, vs, fs) {
 async function makeStarSky() {
   try {
     if (!window.Cesium || !scene || scene.isDestroyed?.() === true) return;
-    const N = PROFILE === "desktop" ? 2048 : PROFILE === "tablet" ? 1536 : 1024;
+    // [3.4] P5: 6 yüz birden bellekte duruyor. 2048² masaüstünde ~100 MB geçici sıçrama yapıyordu;
+    // 1536² ile ~56 MB'a iniyor ve gök kutusunda gözle fark edilmiyor (yıldızlar nokta boyutunda).
+    const N = PROFILE === "desktop" ? 1536 : PROFILE === "tablet" ? 1024 : 768;
     const cv = document.createElement("canvas"); cv.width = cv.height = N;
     const gl = cv.getContext("webgl", { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true }); if (!gl) return;
     const pr = glProgram(gl, SKY_VS, `precision highp float;varying vec2 v;uniform vec3 uA,uB,uC;uniform float uPix;${STAR_GLSL}
@@ -4751,7 +5040,8 @@ async function flyToPlace(place) {
 }
 
 /* Gökyüzü modu */
-const SKYM = { on: false, heading: 0, pitch: 0, eye: null, back: null, ctl: null, atm: null, ht: 0 };
+const SKYM = { on: false, heading: 0, pitch: 0, eye: null, back: null, ctl: null, atm: null, ht: 0, fov0: 0, zt: 0 };
+const SKY_FOV_MIN = Cesium.Math.toRadians(3.2);   // ~×19 büyütme: Ay ekranı doldurur
 const SKY_SVG = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><defs><linearGradient id="zg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#3fd3f5"/></linearGradient></defs>
   <path d="M2.8 26c4.1-3.3 8.5-4.9 13.2-4.9S25.1 22.7 29.2 26" stroke="url(#zg4)" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M10.2 4.6 11.3 7.9l3.3 1.1-3.3 1.1-1.1 3.3-1.1-3.3L5.8 9l3.3-1.1 1.1-3.3Z" fill="url(#zg4)"/>
@@ -4759,6 +5049,7 @@ const SKY_SVG = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><defs><
   <circle cx="15.4" cy="17.2" r="1.15" fill="url(#zg4)"/></svg>`;
 function skyBtnHTML() {
   $("skyLook").innerHTML = `${SKY_SVG}<span class="zw"><span class="zt gx" data-t="${esc(T("skyLook"))}">${esc(T("skyLook"))}</span><small>${esc(T("skyLookD"))}</small></span>`;
+  $("msOut").innerHTML = `${ZO_SVG.replace(/zg2/g, "zg6")}<span class="zw"><span class="zt gx" data-t="${esc(T("moonBack"))}">${esc(T("moonBack"))}</span><small>${esc(T("moonBackD"))}</small></span>`;
   $("skyOut").innerHTML = `${ZO_SVG.replace(/zg2/g, "zg5")}<span class="zw"><span class="zt gx" data-t="${esc(T("skyBack"))}">${esc(T("skyBack"))}</span><small>${esc(T("skyBackD"))}</small></span>`;
 }
 function syncSkyBtn() {
@@ -4801,6 +5092,7 @@ async function skyEnter() {
   groundRef = ground || 0;
   SKYM.eye = { lat: place.lat, lon: place.lon, h: (ground || 0) + 2 };
   SKYM.heading = 0; SKYM.pitch = Cesium.Math.toRadians(78);
+  SKYM.fov0 = viewer.camera.frustum.fovy || Math.PI / 3;   // [3.6] büyütmeden önceki geniş açı
   document.body.classList.add("skymode");
   const ctl = scene.screenSpaceCameraController;                   // Cesium'un kendi kontrolleri yerden yukarı bakarken tuhaf davranır
   SKYM.ctl = { rotate: ctl.enableRotate, translate: ctl.enableTranslate, zoom: ctl.enableZoom, tilt: ctl.enableTilt, look: ctl.enableLook };
@@ -4821,7 +5113,8 @@ function skyLeave() {
   if (!SKYM.on) return;
   SKYM.on = false;
   document.body.classList.remove("skymode", "skydrag");
-  $("skyOut").hidden = true; $("skyHint").hidden = true; clearTimeout(SKYM.ht);
+  $("skyOut").hidden = true; $("skyHint").hidden = true; $("skyZoom").hidden = true; clearTimeout(SKYM.ht); clearTimeout(SKYM.zt);
+  if (SKYM.fov0) { try { viewer.camera.frustum.fovy = SKYM.fov0; } catch {} }   // [3.6]
   const ctl = scene.screenSpaceCameraController, k = SKYM.ctl;
   if (k) { ctl.enableRotate = k.rotate; ctl.enableTranslate = k.translate; ctl.enableZoom = k.zoom; ctl.enableTilt = k.tilt; ctl.enableLook = k.look; }
   const a = SKYM.atm, sa = scene.skyAtmosphere;
@@ -4830,18 +5123,46 @@ function skyLeave() {
   if (b) viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(b.lon, b.lat, b.h), orientation: { heading: b.heading, pitch: b.pitch, roll: b.roll } });
   userTouched(); sync3D(); syncSkyBtn(); scene.requestRender();
 }
-/* Gökyüzünü sürükleme: parmağın altındaki gök parmağı izler, kamera yerinde kalır */
+/* Gökyüzünü sürükleme ve büyütme: parmağın altındaki gök parmağı izler, kamera yerinde kalır.
+   [3.6] Büyütme, dürbüne bakmak gibidir: Ay'ın ve Güneş'in GERÇEK açısal boyutu değişmez,
+   görüş açısı daralır. Kumlu bir telefoto yerine gerçek geometri. Çarpan ekranda yazar. */
+function skyZoom(mul) {
+  if (!SKYM.on) return;
+  const fr = viewer.camera.frustum, now = fr.fovy || SKYM.fov0 || Math.PI / 3;
+  const next = Math.max(SKY_FOV_MIN, Math.min(SKYM.fov0 || Math.PI / 3, now * mul));
+  if (Math.abs(next - now) < 1e-6) return;
+  try { fr.fovy = next; } catch { return; }
+  const k = (SKYM.fov0 || Math.PI / 3) / next;
+  const z = $("skyZoom");
+  if (k > 1.05) { z.textContent = "\u00d7" + (k < 10 ? k.toFixed(1) : Math.round(k)); z.hidden = false; clearTimeout(SKYM.zt); SKYM.zt = setTimeout(() => (z.hidden = true), 2200); }
+  else { z.hidden = true; }
+  skyView();
+}
 (() => {
-  const cv = scene.canvas; let d = null;
-  const stop = () => { if (!d) return; d = null; document.body.classList.remove("skydrag"); };
+  const cv = scene.canvas, pts = new Map();
+  let d = null, pinch = 0;
+  const stop = (e) => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = 0;
+    if (pts.size === 0) { d = null; document.body.classList.remove("skydrag"); }
+    else if (d && e.pointerId === d.id) { const [id, q] = [...pts][0]; d = { x: q.x, y: q.y, id }; }
+  };
   cv.addEventListener("pointerdown", (e) => {
     if (!SKYM.on) return;
-    d = { x: e.clientX, y: e.clientY, id: e.pointerId };
-    document.body.classList.add("skydrag");
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) { d = { x: e.clientX, y: e.clientY, id: e.pointerId }; document.body.classList.add("skydrag"); }
+    else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y) || 0; }
     try { cv.setPointerCapture(e.pointerId); } catch {}
   });
   cv.addEventListener("pointermove", (e) => {
-    if (!d || !SKYM.on || e.pointerId !== d.id) return;
+    if (!SKYM.on || !pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size >= 2) {                                           // iki parmak: büyütme, döndürme yok
+      const [a, b] = [...pts.values()], dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch > 8 && dist > 8) { skyZoom(pinch / dist); pinch = dist; }
+      return;
+    }
+    if (!d || e.pointerId !== d.id) return;
     const k = (viewer.camera.frustum.fovy || 1) / Math.max(1, cv.clientHeight);
     SKYM.heading -= (e.clientX - d.x) * k;
     SKYM.pitch = Math.max(Cesium.Math.toRadians(1.5), Math.min(Cesium.Math.toRadians(88.5), SKYM.pitch + (e.clientY - d.y) * k));
@@ -4849,12 +5170,389 @@ function skyLeave() {
     skyView();
   });
   cv.addEventListener("pointerup", stop); cv.addEventListener("pointercancel", stop); cv.addEventListener("lostpointercapture", stop);
+  cv.addEventListener("wheel", (e) => { if (!SKYM.on) return; e.preventDefault(); skyZoom(e.deltaY > 0 ? 1.12 : 1 / 1.12); }, { passive: false });
 })();
+// [3.4] K3: harita atıflarını açıp kapatan rozet (yalnızca dar ekranda görünür)
+$("crBtn").addEventListener("click", () => {
+  const on = !document.body.classList.contains("credits");
+  document.body.classList.toggle("credits", on);
+  $("crBtn").setAttribute("aria-expanded", String(on));
+});
+scene.canvas.addEventListener("pointerdown", () => {
+  if (!document.body.classList.contains("credits")) return;
+  document.body.classList.remove("credits"); $("crBtn").setAttribute("aria-expanded", "false");
+}, { passive: true });
 $("skyLook").addEventListener("click", skyEnter);
 $("skyOut").addEventListener("click", skyLeave);
 addEventListener("keydown", (e) => { if (e.key === "Escape" && SKYM.on) skyLeave(); });
 viewer.camera.moveEnd.addEventListener(syncSkyBtn);
 skyBtnHTML();
+
+/* ===================== [3.5] Ay yüzeyinden Dünya'yı izleme =====================
+   Cesium'un dünyası Dünya merkezlidir; Ay yüzeyi ona yaptırılamaz. Bu yüzden Güneş
+   sahnesindeki (#ss) desenin aynısı: ayrı bir WebGL sahnesi, tek bir tam ekran
+   gölgelendirici. Zemin geometri değil — her ışın, yarıçapı gerçek Ay yarıçapı olan
+   bir küreyle kesiştiriliyor. Ufuk eğriliği bu yüzden uydurma değil: 1,7 m göz
+   hizasından ufuk 2.430 m'de, Dünya'daki ~5 km'nin yarısından az. Deneyimin imzası bu.
+
+   Dünya'nın konumu, evresi ve dönüşü gerçek: Simon1994 efemerisinden gelen Güneş ve
+   Ay konumlarıyla hesaplanıyor. Ay kilitli döndüğü için Dünya gökyüzünde asılı kalır;
+   doğmaz, batmaz. Evresi, o an Dünya'dan görünen Ay evresinin tersidir. */
+
+const MOONS = {
+  on: false, mode: "off", gl: null, cv: null, prog: null, U: {}, quad: null, tex: null,
+  yaw: 0, pitch: 0.12, fov: 0.95, raf: 0, last: 0, t0: 0, scale: 1, slow: 0, prevDraw: 0,
+  drag: null, ptrs: new Map(), pinch: null, back: null, tick: 0, site: null, hintT: 0,
+};
+// Apollo 11 / Sakinlik Denizi. Seleografik 0,67° K — 23,47° D: Dünya burada gökyüzünde yüksekte durur.
+const MOON_SITE = { lat: 0.674, lon: 23.473, name: "Mare Tranquillitatis" };
+const EARTH_R = 6371000;
+
+/* ---------- Gökbilim: bölgenin yerel çerçevesi, Güneş ve Dünya yönleri ---------- */
+const _c3 = () => new Cesium.Cartesian3();
+const nrm = (v) => Cesium.Cartesian3.normalize(v, v);
+const crs = (a, b) => Cesium.Cartesian3.cross(a, b, _c3());
+const dt3 = Cesium.Cartesian3.dot;
+function moonFrame() {
+  const t = viewer.clock.currentTime;
+  const moon = moonPosWC(), sun = sunPosWC();
+  let M = Cesium.Transforms.computeIcrfToFixedMatrix(t, new Cesium.Matrix3());
+  if (!M) M = Cesium.Transforms.computeTemeToPseudoFixedMatrix(t, new Cesium.Matrix3());
+  // Ay'ın kutup ekseni ekliptik kutbuna 1,5° uzaklıkta; ekliptik kutbunu kullanmak yeterince doğru.
+  const eps = Cesium.Math.toRadians(23.4393);
+  const lunarN = nrm(Cesium.Matrix3.multiplyByVector(M, new Cesium.Cartesian3(0, -Math.sin(eps), Math.cos(eps)), _c3()));
+  // Seleografik (0,0): Ay merkezinden Dünya'ya bakan yön — kilitli dönme bunu sabitler
+  const u0 = nrm(Cesium.Cartesian3.negate(moon, _c3()));
+  const e0 = nrm(crs(lunarN, u0)), n0 = crs(u0, e0);
+  const la = Cesium.Math.toRadians(MOON_SITE.lat), lo = Cesium.Math.toRadians(MOON_SITE.lon);
+  const up = _c3();
+  Cesium.Cartesian3.add(
+    Cesium.Cartesian3.add(Cesium.Cartesian3.multiplyByScalar(u0, Math.cos(la) * Math.cos(lo), _c3()),
+                          Cesium.Cartesian3.multiplyByScalar(e0, Math.cos(la) * Math.sin(lo), _c3()), _c3()),
+    Cesium.Cartesian3.multiplyByScalar(n0, Math.sin(la), _c3()), up);
+  nrm(up);
+  const north = nrm(Cesium.Cartesian3.subtract(lunarN, Cesium.Cartesian3.multiplyByScalar(up, dt3(lunarN, up), _c3()), _c3()));
+  const east = nrm(crs(north, up));
+  const site = Cesium.Cartesian3.add(moon, Cesium.Cartesian3.multiplyByScalar(up, MOON_R, _c3()), _c3());
+  const toLocal = (v) => [dt3(v, east), dt3(v, up), dt3(v, north)];   // x doğu, y yukarı, z kuzey
+  const earthV = Cesium.Cartesian3.negate(site, _c3()), earthDist = Cesium.Cartesian3.magnitude(earthV);
+  const sunDir = nrm(Cesium.Cartesian3.subtract(sun, site, _c3()));
+  // Yıldızlar: yerel yön → ICRF (gök kutusu doğru yerde dursun)
+  const Mt = Cesium.Matrix3.transpose(M, new Cesium.Matrix3());
+  const toIcrf = (v) => Cesium.Matrix3.multiplyByVector(Mt, v, _c3());
+  const sx = toIcrf(east), sy = toIcrf(up), sz = toIcrf(north);
+  // Dünya diskini çizerken gereken iki dik eksen; "yukarı"sı Dünya'nın kendi kuzeyine hizalanır
+  const eDir = nrm(Cesium.Cartesian3.clone(earthV, _c3()));
+  const eNorth = new Cesium.Cartesian3(0, 0, 1);
+  let eu = Cesium.Cartesian3.subtract(eNorth, Cesium.Cartesian3.multiplyByScalar(eDir, dt3(eNorth, eDir), _c3()), _c3());
+  if (Cesium.Cartesian3.magnitude(eu) < 1e-6) eu = Cesium.Cartesian3.clone(north, _c3());
+  nrm(eu);
+  const er = nrm(crs(eu, eDir));
+  return {
+    earth: toLocal(eDir), er: toLocal(er), eu: toLocal(eu),
+    earthAng: Math.asin(Math.min(0.5, EARTH_R * bodyK() / earthDist)),
+    earthDist,
+    sun: toLocal(sunDir),
+    sunAng: Math.asin(Math.min(0.5, 695700000 * bodyK() / Cesium.Cartesian3.magnitude(Cesium.Cartesian3.subtract(sun, site, _c3())))),
+    // Dünya'nın kendi eksenleri yerel çerçevede: dokunun doğru dönmesi için
+    ex: toLocal(new Cesium.Cartesian3(1, 0, 0)), ey: toLocal(new Cesium.Cartesian3(0, 1, 0)), ez: toLocal(new Cesium.Cartesian3(0, 0, 1)),
+    sky: [sx.x, sx.y, sx.z, sy.x, sy.y, sy.z, sz.x, sz.y, sz.z],
+  };
+}
+
+/* ---------- Dünya dokusu: Cesium paketindeki NaturalEarth II (kamu malı) ---------- */
+function earthTexCanvas() {
+  return new Promise((res) => {
+    const c = document.createElement("canvas"); c.width = 1024; c.height = 512;
+    const g = c.getContext("2d");
+    const fallback = () => {                                   // doku inmezse: okyanus + kıta lekeleri, hiç yoktan iyidir
+      g.fillStyle = "#13365e"; g.fillRect(0, 0, 1024, 512);
+      let sd = 97; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+      for (let i = 0; i < 160; i++) {
+        const x = r() * 1024, y = 80 + r() * 350, w = 30 + r() * 150, h = 20 + r() * 90;
+        g.fillStyle = r() < 0.5 ? "rgba(96,116,74,.75)" : "rgba(126,112,78,.7)";
+        g.beginPath(); g.ellipse(x, y, w, h, r() * 3, 0, 6.3); g.fill();
+      }
+      g.fillStyle = "rgba(236,244,250,.85)"; g.fillRect(0, 0, 1024, 26); g.fillRect(0, 486, 1024, 26);
+      res(c);
+    };
+    let left = 2, failed = false;
+    const done = () => { if (--left === 0) res(c); };
+    try {
+      const base = Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII/0/");
+      for (const [x, dx] of [[0, 0], [1, 512]]) {
+        const im = new Image(); im.crossOrigin = "anonymous";
+        im.onload = () => { try { g.drawImage(im, dx, 0, 512, 512); } catch {} done(); };
+        im.onerror = () => { if (!failed) { failed = true; fallback(); } };
+        im.src = `${base}${x}/0.jpg`;
+      }
+    } catch { fallback(); }
+    setTimeout(() => { if (left > 0 && !failed) { failed = true; fallback(); } }, 9000);
+  });
+}
+
+/* ---------- Gölgelendirici ---------- */
+const MS_VS = "attribute vec2 p;varying vec2 v;void main(){v=p;gl_Position=vec4(p,0.,1.);}";
+const MS_FS = `precision highp float;
+varying vec2 v;
+uniform vec3 uF,uR,uU,uSun,uEarth,uER,uEU,uEX,uEY,uEZ;
+uniform mat3 uSky;
+uniform vec2 uTan;
+uniform float uEA,uSA,uT,uPix,uVis;
+uniform sampler2D uTex;
+${STAR_GLSL}
+float h21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.y);}
+float vn2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p,float k){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vn2(p)*k;p*=2.03;a*=.5;k=min(1.,k*1.25);}return s;}
+// Krater alanı: her hücrede bir krater; içi çukur, kenarı yükselen halka. Üç ölçek üst üste.
+float craters(vec2 p,float lod){
+  float h=0.;
+  for(int i=0;i<3;i++){
+    float sc=exp2(float(i)*1.6);
+    vec2 q=p*sc; vec2 c=floor(q); vec2 f=fract(q);
+    float rnd=h21(c+float(i)*19.7);
+    if(rnd>.42){
+      vec2 ctr=vec2(h21(c+7.3),h21(c+13.1))*.6+.2;
+      float rad=.14+rnd*.3, d=length(f-ctr)/rad;
+      float bowl=-(1.-smoothstep(.0,.85,d))*rad*.55;
+      float rim=exp(-pow((d-.92)/.17,2.))*rad*.30;
+      h+=(bowl+rim)/sc*(1.-lod*float(i)*.4);
+    }
+  }
+  return h;
+}
+float relief(vec2 p,float lod){
+  float h=fbm(p*.012,1.)*5.5+fbm(p*.09,1.-lod*.5)*.55+craters(p*.02,lod)*22.;
+  h+=fbm(p*1.3,max(0.,1.-lod*1.6))*.035;      // çakıl: yalnızca yakında
+  return h;
+}
+void main(){
+  vec3 d=normalize(uF+v.x*uTan.x*uR+v.y*uTan.y*uU);
+  vec3 col=vec3(0.);
+  float RM=1737400.0, HH=1.7;
+  float a=RM+HH, b=a*d.y, c2=2.0*RM*HH+HH*HH;
+  bool hit=(b<0.0)&&(b*b>c2);
+  if(hit){
+    float t=c2/(-b+sqrt(max(1e-6,b*b-c2)));    // sayısal olarak kararlı kök: yakın kesişim
+    vec3 P=t*d;
+    vec3 N0=normalize(vec3(P.x/a,P.y/a+1.0,P.z/a));
+    float lod=clamp(log2(1.0+t/6.0)/7.0,0.0,1.0);
+    vec2 g=P.xz;
+    float e=max(.12,t*.004);
+    float h0=relief(g,lod);
+    float hx=relief(g+vec2(e,0.),lod), hz=relief(g+vec2(0.,e),lod);
+    vec3 nT=normalize(vec3(-(hx-h0)/e,1.0,-(hz-h0)/e));
+    vec3 N=normalize(N0+vec3(nT.x,0.0,nT.z)*(1.0-lod*.55));
+    float alb=.108+vn2(g*.05)*.045+vn2(g*.6)*.02;
+    float nl=max(0.,dot(N,uSun));
+    // Atmosfer yok: ara ton da yok. Aydınlık taraf sert, gölge simsiyah.
+    vec3 lit=vec3(alb)*vec3(1.0,.975,.94)*nl*2.35;
+    lit+=vec3(alb)*max(0.,dot(N,uEarth))*vec3(.30,.45,.70)*.055;   // yeryüzü ışığı: tek yumuşak dolgu
+    lit+=vec3(alb)*pow(max(0.,dot(d,-uSun)),8.)*nl*.25;            // karşıt yön saçılması (regolitin imzası)
+    col=lit;
+    col*=1.0-smoothstep(.55,1.0,lod)*.08;
+  } else {
+    col=stars(uSky*d,uPix,vec3(.86,.9,1.))*1.15;
+    float sa=acos(clamp(dot(d,uSun),-1.,1.));
+    if(sa<uSA){col=vec3(12.0);}
+    else col+=vec3(1.,.96,.88)*exp(-(sa-uSA)*170.0)*.55;
+    float ea=acos(clamp(dot(d,uEarth),-1.,1.));
+    if(ea<uEA){
+      vec2 q=vec2(dot(d,uER),dot(d,uEU))/uEA;
+      float r2=min(.9999,dot(q,q)), zz=sqrt(1.-r2);
+      vec3 n=normalize(uER*q.x+uEU*q.y-uEarth*zz);
+      float lon=atan(dot(n,uEY),dot(n,uEX)), lat=asin(clamp(dot(n,uEZ),-1.,1.));
+      vec3 t0=texture2D(uTex,vec2(lon*.1591549+.5,.5-lat*.3183099)).rgb;
+      float nl=max(0.,dot(n,uSun));
+      vec3 day=t0*(.25+1.35*nl);
+      vec3 night=t0*.012+vec3(.006,.008,.012);
+      vec3 e=mix(night,day,smoothstep(-.05,.18,dot(n,uSun)));
+      float limb=smoothstep(.82,1.0,sqrt(r2));
+      e+=vec3(.25,.45,.85)*limb*nl*.5;                              // ince mavi atmosfer kenarı
+      col=mix(col,e,.995);
+    } else {
+      float g2=exp(-(ea-uEA)/max(uEA,.004)*2.2);
+      col+=vec3(.22,.38,.70)*g2*.05;
+    }
+  }
+  col*=uVis;
+  col=col/(col+vec3(.85))*1.35;                                     // ton eşleme: güneş patlamadan, gölge dibe oturmadan
+  gl_FragColor=vec4(pow(max(col,vec3(0.)),vec3(.4545)),1.);
+}`;
+
+/* ---------- WebGL kurulumu ---------- */
+function msInit() {
+  if (MOONS.gl) return true;
+  const cv = $("msGL"); let gl = null;
+  try { gl = cv.getContext("webgl", { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: "high-performance" }); } catch {}
+  if (!gl) return false;
+  try { MOONS.prog = glProgram(gl, MS_VS, MS_FS); } catch (e) { console.warn("moon shader", e); return false; }
+  MOONS.quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, MOONS.quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  MOONS.aP = gl.getAttribLocation(MOONS.prog, "p");
+  for (const n of ["uF", "uR", "uU", "uSun", "uEarth", "uER", "uEU", "uEX", "uEY", "uEZ", "uSky", "uTan", "uEA", "uSA", "uT", "uPix", "uVis", "uTex"])
+    MOONS.U[n] = gl.getUniformLocation(MOONS.prog, n);
+  MOONS.gl = gl; MOONS.cv = cv;
+  cv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); MOONS.gl = null; MOONS.tex = null; }, false);
+  return true;
+}
+async function msTexture() {
+  const gl = MOONS.gl; if (!gl || MOONS.tex) return;
+  const c = await earthTexCanvas(); if (!MOONS.gl) return;
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c); }
+  catch { gl.deleteTexture(t); return; }        // tuval kirlendiyse (CORS) doku yüklenmez; Dünya yine çizilir, dokusuz
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  MOONS.tex = t; c.width = c.height = 1; msKick();
+}
+function msResize() {
+  const cv = $("msGL"), k = Math.min(window.devicePixelRatio || 1, PROFILE === "desktop" ? 1.4 : 1.15) * MOONS.scale;
+  const w = Math.max(2, Math.round(innerWidth * k)), h = Math.max(2, Math.round(innerHeight * k));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+}
+function msCam() {
+  const y = MOONS.yaw, p = MOONS.pitch, cy = Math.cos(y), sy = Math.sin(y), cp = Math.cos(p), sp = Math.sin(p);
+  return { F: [sy * cp, sp, cy * cp], R: [cy, 0, -sy], U: [-sy * sp, cp, -cy * sp] };   // x doğu, y yukarı, z kuzey
+}
+function msDraw(now) {
+  const gl = MOONS.gl; if (!gl || !MOONS.site) return;
+  msResize();
+  const cv = MOONS.cv, U = MOONS.U, C = msCam();
+  const tanY = Math.tan(MOONS.fov / 2), tanX = tanY * innerWidth / innerHeight;
+  gl.viewport(0, 0, cv.width, cv.height);
+  gl.useProgram(MOONS.prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, MOONS.quad);
+  gl.enableVertexAttribArray(MOONS.aP); gl.vertexAttribPointer(MOONS.aP, 2, gl.FLOAT, false, 0, 0);
+  const f = MOONS.site;
+  gl.uniform3fv(U.uF, C.F); gl.uniform3fv(U.uR, C.R); gl.uniform3fv(U.uU, C.U);
+  gl.uniform3fv(U.uSun, f.sun); gl.uniform3fv(U.uEarth, f.earth);
+  gl.uniform3fv(U.uER, f.er); gl.uniform3fv(U.uEU, f.eu);
+  gl.uniform3fv(U.uEX, f.ex); gl.uniform3fv(U.uEY, f.ey); gl.uniform3fv(U.uEZ, f.ez);
+  gl.uniformMatrix3fv(U.uSky, false, f.sky);
+  gl.uniform2f(U.uTan, tanX, tanY);
+  gl.uniform1f(U.uEA, f.earthAng); gl.uniform1f(U.uSA, f.sunAng);
+  gl.uniform1f(U.uT, (now - MOONS.t0) / 1000); gl.uniform1f(U.uPix, 2 * tanY / cv.height);
+  gl.uniform1f(U.uVis, MOONS.vis === undefined ? 1 : MOONS.vis);
+  if (MOONS.tex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, MOONS.tex); gl.uniform1i(U.uTex, 0); }
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.disableVertexAttribArray(MOONS.aP);
+  // akıcılık bekçisi: kareler uzarsa çözünürlük iner, donma yerine biraz yumuşak görüntü
+  const gap = MOONS.prevDraw ? now - MOONS.prevDraw : 0; MOONS.prevDraw = now;
+  if (gap > 0 && gap < 1500) { MOONS.slow = MOONS.slow * .85 + (gap > 48 ? 1 : 0) * .15;
+    if (MOONS.slow > .6 && MOONS.scale > .5) { MOONS.scale = Math.max(.5, MOONS.scale - .15); MOONS.slow = 0; } }
+}
+function msKick() { if (!MOONS.raf && MOONS.on) MOONS.raf = requestAnimationFrame(msFrame); }
+function msFrame(now) {
+  MOONS.raf = 0;
+  if (!MOONS.on || document.hidden) return;
+  let busy = false;
+  if (MOONS.anim) busy = MOONS.anim(now) !== false;
+  msDraw(now);
+  if (busy || MOONS.drag || MOONS.pinch) MOONS.raf = requestAnimationFrame(msFrame);
+}
+function msTween(ms, fn) {
+  return new Promise((res) => { const t0 = performance.now();
+    MOONS.anim = (now) => { const u = Math.min(1, (now - t0) / ms); fn(easeIO(u), u); if (u >= 1) { MOONS.anim = null; res(); return false; } return true; };
+    msKick(); });
+}
+
+/* ---------- Giriş ve çıkış ---------- */
+async function toMoon() {
+  if (MOONS.on || SUN.mode !== "earth") return;
+  if (document.body.classList.contains("skymode")) { skyLeave(); await sleep(400); }
+  if (!msInit()) { toast(T("noGL")); return; }
+  MOONS.on = true; MOONS.mode = "travel";
+  try { if (!PANEL.hidden) setPanel(false); if (S.sel) closeSel(); FIND.show(false); $("settings").hidden = true; $("setBtn").setAttribute("aria-pressed", "false"); } catch {}
+  leaveHud(); ++mission;
+  const c = viewer.camera.positionCartographic;
+  MOONS.back = { lon: Cesium.Math.toDegrees(c.longitude), lat: Cesium.Math.toDegrees(c.latitude), h: c.height };
+  msTexture();
+  // Dünya'dan ayrılış: kamera geri çekilir, sonra sahne açılır
+  await flyP({ destination: Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, 3.8e7), duration: 2.0, easingFunction: Cesium.EasingFunction.QUADRATIC_IN });
+  if (!MOONS.on) return;
+  MOONS.site = moonFrame();
+  MOONS.yaw = Math.atan2(MOONS.site.earth[0], MOONS.site.earth[2]);          // Dünya karşımızda başlar
+  MOONS.pitch = Math.max(0.05, Math.asin(Math.min(.99, MOONS.site.earth[1])) - 0.18);
+  MOONS.fov = 0.95; MOONS.scale = 1; MOONS.t0 = performance.now(); MOONS.vis = 0;
+  viewer.useDefaultRenderLoop = false;                                        // Ay'dayken harita tamamen durur
+  const sec = $("ms"); sec.hidden = false; document.body.classList.add("moonmode");
+  sound.scene("earth");
+  msKick();
+  await msTween(1600, (e) => { MOONS.vis = e; });
+  MOONS.vis = 1; MOONS.mode = "surface";
+  $("msOut").hidden = false; $("msBreath").hidden = !!matchMedia("(prefers-reduced-motion: reduce)").matches;
+  msHint(`${MOON_SITE.name}`, T("moonHint"));
+  MOONS.tick = setInterval(() => { if (MOONS.on) { MOONS.site = moonFrame(); msKick(); } }, 20000);   // Dünya yavaşça döner
+}
+async function fromMoon() {
+  if (!MOONS.on || MOONS.mode === "travel") return;
+  MOONS.mode = "travel";
+  clearInterval(MOONS.tick); MOONS.tick = 0;
+  $("msOut").hidden = true; $("msBreath").hidden = true; $("msHint").hidden = true;
+  await msTween(1100, (e) => { MOONS.vis = 1 - e; });
+  MOONS.on = false; MOONS.mode = "off"; MOONS.vis = 0;
+  $("ms").hidden = true; document.body.classList.remove("moonmode");
+  viewer.useDefaultRenderLoop = true;
+  const b = MOONS.back || { lon: 35, lat: 30, h: 1.7e7 };
+  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(b.lon, b.lat, 3.8e7) });
+  scene.requestRender();
+  await flyP({ destination: Cesium.Cartesian3.fromDegrees(b.lon, b.lat, Math.min(2.4e7, b.h)), duration: 2.2, easingFunction: Cesium.EasingFunction.QUADRATIC_OUT });
+  userTouched();
+}
+function msHint(title, body) {
+  const h = $("msHint"); h.innerHTML = `<b>${esc(title)}</b>${esc(body)}`;
+  h.hidden = false; clearTimeout(MOONS.hintT); MOONS.hintT = setTimeout(() => (h.hidden = true), 7500);
+}
+/* ---------- Dokunma: sürükle = çevrene bak, iki parmak = yakınlaş ---------- */
+(() => {
+  const sec = $("ms");
+  sec.addEventListener("pointerdown", (e) => {
+    if (MOONS.mode !== "surface" || e.target.closest("button")) return;
+    MOONS.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (MOONS.ptrs.size === 2) { const [a, b] = [...MOONS.ptrs.values()]; MOONS.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), fov: MOONS.fov }; MOONS.drag = null; }
+    else MOONS.drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  });
+  sec.addEventListener("pointermove", (e) => {
+    const p = MOONS.ptrs.get(e.pointerId); if (!p || MOONS.mode !== "surface") return;
+    p.x = e.clientX; p.y = e.clientY;
+    if (MOONS.pinch && MOONS.ptrs.size >= 2) {
+      const [a, b] = [...MOONS.ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      MOONS.fov = Math.max(.22, Math.min(1.25, MOONS.pinch.fov * MOONS.pinch.d / Math.max(20, d))); msKick(); return;
+    }
+    const D = MOONS.drag; if (!D || e.pointerId !== D.id) return;
+    const k = 2 * Math.tan(MOONS.fov / 2) / Math.max(1, innerHeight);
+    MOONS.yaw -= (e.clientX - D.x) * k;
+    MOONS.pitch = Math.max(-0.55, Math.min(1.45, MOONS.pitch + (e.clientY - D.y) * k));
+    D.x = e.clientX; D.y = e.clientY; msKick();
+  });
+  const up = (e) => { MOONS.ptrs.delete(e.pointerId); if (MOONS.ptrs.size < 2) MOONS.pinch = null; if (MOONS.ptrs.size === 0) MOONS.drag = null; };
+  sec.addEventListener("pointerup", up); sec.addEventListener("pointercancel", up);
+  sec.addEventListener("wheel", (e) => { if (MOONS.mode !== "surface") return; e.preventDefault();
+    MOONS.fov = Math.max(.22, Math.min(1.25, MOONS.fov * Math.exp(e.deltaY * .0011))); msKick(); }, { passive: false });
+})();
+// [3.6] Görünür Ay düğmesi: tek dokunuş yeter, basılı tutmak şart değil
+{ const g = $("moonGo"); g.textContent = T("moonGo");
+  g.addEventListener("click", (e) => { e.stopPropagation(); toMoon(); }); }
+$("msOut").addEventListener("click", fromMoon);
+addEventListener("keydown", (e) => { if (e.key === "Escape" && MOONS.mode === "surface") fromMoon(); });
+addEventListener("resize", () => { if (MOONS.on) msKick(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && MOONS.on) msKick(); });
+/* Ay'a gidiş: gökyüzündeki Ay'a basılı tut (Güneş'teki desenin aynısı) */
+gesture(scene.canvas, (x, y) => SUN.mode === "earth" && !MOONS.on && MOON.scr && Math.hypot(x - MOON.scr.x, y - MOON.scr.y) < Math.max(30, MOON.ang * 1.1),
+  { hidden: 400, fill: 3000, onHold: () => toMoon() });
+// Ay ilk kez ekranda göründüğünde bir kerelik ipucu: yoksa kimse bu hareketi bulamaz
+function moonHintOnce() {
+  MOON.hinted = true;
+  try { if (localStorage.getItem("wm-moon-hint") === "1") return; } catch {}
+  try { localStorage.setItem("wm-moon-hint", "1"); } catch {}
+  setTimeout(() => { if (SUN.mode === "earth" && !MOONS.on && MOON.scr) toast(T("moonFind"), 9000); }, 1200);
+}
 
 /* ---------- Mini logo: girişteki sinematik küreyle aynı stil; bir kez çizilir (sürekli yeniden çizim yok) ---------- */
 function miniLogo(cv) { try { window.WMOrb && window.WMOrb.paintStatic(cv); } catch {} }
@@ -4863,6 +5561,7 @@ miniLogo($("bLogo")); miniLogo($("pLogo"));
 /* ---------- Uygulama: kurulabilir uygulama ve APK için arka plan çalışanı (ekranda düğme yok) ---------- */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("wm-sw.js").catch(() => {});
 /* ---------- Başlat ---------- */
+$("srcs").hidden = !SET.srcs;   // [3.4] H4
 renderStatic(); renderChips(); renderSrcs(); renderList();
 let started = false;
 window.startFeeds = () => { if (started) return; started = true;
