@@ -306,6 +306,9 @@ body.engaged.arrived .hud-read{left:calc(var(--l) + 4px);transform:none;bottom:c
 .media figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;font:400 11px/1.4 var(--f-ui);color:#e9f3fa;
   background:linear-gradient(transparent,rgba(3,6,10,.88));display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .media .mk{font:500 9.5px var(--f-data);letter-spacing:.16em;text-transform:uppercase;color:var(--signal);margin-right:8px}
+.media .cred{display:block;margin-top:3px;font:400 9.5px/1.3 var(--f-data);letter-spacing:.02em;color:rgba(190,214,228,.72);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.media .cred a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.media .cred a:hover{color:var(--signal)}
 .media .cnt{position:absolute;top:8px;right:8px;font:500 10px var(--f-data);letter-spacing:.08em;padding:3px 7px;border-radius:999px;background:rgba(3,6,10,.7);border:1px solid var(--line)}
 .media .thumbs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
 .media .thumbs::-webkit-scrollbar{display:none}
@@ -375,7 +378,6 @@ body.engaged.arrived .hud-read{left:calc(var(--l) + 4px);transform:none;bottom:c
 /* haber bölmesi: listenin içinde açılır */
 #panel #card{position:static!important;inset:auto!important;width:auto!important;max-height:none!important;transform:none!important;margin:0 12px 12px 36px;padding:12px!important;
   border-radius:12px!important;opacity:1!important;pointer-events:auto!important;box-shadow:none!important;background:rgba(10,17,28,.9)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-#panel #card > h2{display:none}
 #panel #card .ctop .x{display:none}
 #panel #card .media .hero{aspect-ratio:16/10}
 #panel #card .media .thumbs{display:flex}
@@ -446,7 +448,6 @@ body.engaged.arrived .hud-read{left:calc(var(--l) + 4px);transform:none;bottom:c
   animation:holdIn .45s cubic-bezier(.2,.9,.25,1.1) both}
 @keyframes holdIn{from{opacity:0;transform:translateY(18px) scale(.94) rotate(-1.2deg)}to{opacity:1;transform:none}}
 #card.held > *{order:0!important}
-#card.held > h2{display:-webkit-box!important;font-size:19px}
 #card.held .ctop{position:sticky;top:-16px;margin:-16px -18px 0;padding:12px 14px 10px 18px;background:rgba(10,17,28,.96);z-index:2;border-bottom:1px solid rgba(150,232,255,.12)}
 #card.held .ctop .x{display:grid!important;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid rgba(150,232,255,.35);background:rgba(125,216,255,.08);color:#fff;font-size:22px;margin-left:auto}
 #card.held .ctop .x:hover{background:rgba(125,216,255,.2);box-shadow:0 0 14px rgba(125,216,255,.4)}
@@ -490,10 +491,15 @@ body.splashing .bar,body.splashing #panel,body.splashing .bigbtn{visibility:hidd
 /* Elde tutulan kart: sabit iskelet. Başlık üstte, gövde kendi içinde kayar, ZOOM düğmesi altta hep görünür. Kendi kendine boyut/yer değiştirmez. */
 #card.held{display:flex!important;flex-direction:column;gap:0!important;padding:0!important;overflow:hidden!important;animation:none!important;contain:layout paint;
   min-width:0;max-height:none!important;bottom:auto!important}
-#card.held .ctop{position:relative;top:auto;margin:0;flex:none;padding:12px 14px 10px 18px;border-radius:20px 20px 0 0}
+#card.held .ctop{position:relative;top:auto;margin:0;flex:none;padding:12px 14px 11px 18px;border-radius:20px 20px 0 0;
+  display:grid;gap:8px;align-items:start}
+/* [3.0] Haber başlığı sabit üst çubukta: kart kaydırılsa da, taşınsa da hep görünür */
+#card.held .ctop .crow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#card.held .ctop .chead{margin:0;font:800 16.5px/1.32 var(--f-ui);color:#fff;letter-spacing:-.005em;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
+@media (max-width:760px){ #card.held .ctop .chead{font-size:15px;-webkit-line-clamp:2} }
 #card[hidden],#card.held[hidden]{display:none!important}
 #card .cbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px 18px 16px;display:grid;gap:12px;align-content:start;scrollbar-width:thin;scrollbar-color:rgba(150,232,255,.25) transparent}
-#card.held .cbody > h2{display:-webkit-box;font-size:19px}
 #card .zbar{flex:none;padding:12px 14px 14px;border-top:1px solid rgba(150,232,255,.12);background:linear-gradient(180deg,rgba(9,16,25,.55),rgba(4,8,13,.97));border-radius:0 0 20px 20px}
 /* Boyutlandırma tutamacı */
 #card .grip{display:none;position:absolute;z-index:4;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -542,6 +548,10 @@ body.splashing .bar,body.splashing #panel,body.splashing .bigbtn{visibility:hidd
 .more blockquote{margin:0;padding:10px 12px;border-left:2px solid rgba(125,216,255,.6);background:rgba(125,216,255,.05);border-radius:0 10px 10px 0;font-size:13.5px;line-height:1.6;color:#dce8ef}
 .more blockquote cite{display:block;margin-top:6px;font:500 10px var(--f-data);letter-spacing:.08em;text-transform:uppercase;font-style:normal;color:var(--signal)}
 .more .wk p{font-size:13.5px;line-height:1.62;color:#d6e1e9}
+/* [3.0] Kaynağa git bağlantısı */
+.more .gosrc{display:inline-block;margin-top:2px;font:600 12.5px var(--f-ui);color:var(--signal);text-decoration:none;
+  border-bottom:1px solid rgba(125,216,255,.4);padding-bottom:1px}
+.more .gosrc:hover{color:#fff;border-bottom-color:#fff}
 
 /* ===================== [2.5] ===================== */
 /* Afişteki başlık mantığı: sıkı, kalın display yazı; beyaz ile turkuaz arasında yavaş renk döngüsü (yalnız saydamlık değişir: donma yok) */
@@ -681,6 +691,16 @@ body.sunmode #sunEarth,body.sunmode #hud{display:none!important}
 .langs button[aria-pressed="true"]{background:linear-gradient(180deg,rgba(70,205,245,.3),rgba(70,205,245,.12));color:#fff;box-shadow:inset 0 0 0 1px rgba(140,228,255,.55),0 0 14px rgba(70,205,245,.25)}
 .langs button:focus-visible{outline:2px solid var(--signal);outline-offset:1px}
 .privlink{justify-self:start;margin-top:6px;font:500 12px var(--f-ui);color:var(--mute);text-decoration:underline;text-underline-offset:3px}
+/* [3.0] İletişim bölümü (Google Play News & Magazines şartı) */
+#settings .cinfo{margin:2px 0 0;font:400 12.5px/1.45 var(--f-ui);color:var(--soft)}
+#settings .cmail{justify-self:start;margin-top:2px;padding:8px 14px;border-radius:999px;font:600 13px var(--f-ui);color:#e9fbff;text-decoration:none;
+  background:rgba(120,215,250,.1);border:1px solid rgba(150,232,255,.5);box-shadow:0 0 12px rgba(120,215,250,.2);word-break:break-all}
+#settings .cmail:hover,#settings .cmail:focus-visible{background:rgba(120,215,250,.2);box-shadow:0 0 22px rgba(120,215,250,.45);outline:none}
+#settings .flinks{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(150,232,255,.1)}
+#settings .flinks .privlink{margin-top:0}
+/* [3.0] Listede yayıncı adı: her haberin kaynağı başta görünür */
+#list .src{font-weight:600;color:var(--soft);font-style:normal}
+#panel #list .src{color:#bfe6f5}
 [dir="rtl"] .bar,[dir="rtl"] #panel,[dir="rtl"] #card,[dir="rtl"] #settings{text-align:right}
 [dir="rtl"] .zbtn{text-align:right}
 
@@ -918,7 +938,13 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   <label class="sw"><span><span data-i="sAnim">Animations</span><small data-i="sAnimD">Pulse rings and building glow</small></span><input type="checkbox" id="s_anim"><i></i></label>
   <h4 data-i="language">Language</h4>
   <div class="langs" id="s_lang"></div>
-  <a class="privlink" href="privacy.html" target="_blank" rel="noopener" data-i="privacy">Privacy</a>
+  <h4 data-i="contactH">Contact</h4>
+  <p class="cinfo" data-i="contactD">Questions, corrections or content removal requests about WorldMind:</p>
+  <a class="cmail" href="mailto:contact.worldmind@gmail.com">contact.worldmind@gmail.com</a>
+  <div class="flinks">
+    <a class="privlink" href="contact.html" target="_blank" rel="noopener" data-i="contactPage">Contact page</a>
+    <a class="privlink" href="privacy.html" target="_blank" rel="noopener" data-i="privacy">Privacy</a>
+  </div>
 </section>
 <section id="card" hidden></section>
 
@@ -1243,6 +1269,25 @@ const S = {
 // [2.8] yeni arayüz metinleri
 const L28 = {"en": {"sherAll": "Whole line", "sherGo": "Fly to", "earthL": "Earth", "mkm": "M km", "sunHint": "Drag to circle the Sun · pinch to zoom · tap the Sun 3 times", "ayHint": "Tap a verse to read its meaning", "sSound": "Sound", "sSoundD": "Space ambience"}, "tr": {"sherAll": "Bütün hat", "sherGo": "Git", "earthL": "Dünya", "mkm": "milyon km", "sunHint": "Sürükle: Güneş’in etrafında dön · iki parmak: yaklaş · Güneş’e 3 kez dokun", "ayHint": "Mealini okumak için bir ayete dokun", "sSound": "Ses", "sSoundD": "Uzay ambiyansı"}, "it": {"sherAll": "Tutta la linea", "sherGo": "Vai a", "earthL": "Terra", "mkm": "mln km", "sunHint": "Trascina per girare intorno al Sole · pizzica per lo zoom · tocca il Sole 3 volte", "ayHint": "Tocca un versetto per leggerne il significato", "sSound": "Suono", "sSoundD": "Atmosfera spaziale"}, "ru": {"sherAll": "Вся линия", "sherGo": "Лететь", "earthL": "Земля", "mkm": "млн км", "sunHint": "Проведите, чтобы облететь Солнце · сведите пальцы для масштаба · коснитесь Солнца 3 раза", "ayHint": "Коснитесь аята, чтобы прочитать смысл", "sSound": "Звук", "sSoundD": "Звуки космоса"}, "fr": {"sherAll": "Toute la ligne", "sherGo": "Aller à", "earthL": "Terre", "mkm": "M km", "sunHint": "Glissez pour tourner autour du Soleil · pincez pour zoomer · touchez le Soleil 3 fois", "ayHint": "Touchez un verset pour lire son sens", "sSound": "Son", "sSoundD": "Ambiance spatiale"}, "es": {"sherAll": "Toda la línea", "sherGo": "Ir a", "earthL": "Tierra", "mkm": "M km", "sunHint": "Arrastra para rodear el Sol · pellizca para acercar · toca el Sol 3 veces", "ayHint": "Toca un versículo para leer su significado", "sSound": "Sonido", "sSoundD": "Ambiente espacial"}, "zh": {"sherAll": "整条连线", "sherGo": "前往", "earthL": "地球", "mkm": "百万公里", "sunHint": "拖动环绕太阳 · 双指缩放 · 轻点太阳三次", "ayHint": "轻点经文查看释义", "sSound": "声音", "sSoundD": "太空氛围"}, "ar": {"sherAll": "الخط كاملًا", "sherGo": "انتقل إلى", "earthL": "الأرض", "mkm": "مليون كم", "sunHint": "اسحب للدوران حول الشمس · قرّب بإصبعين · انقر على الشمس 3 مرات", "ayHint": "انقر على آية لقراءة معناها", "sSound": "الصوت", "sSoundD": "أجواء الفضاء"}, "de": {"sherAll": "Ganze Linie", "sherGo": "Fliegen zu", "earthL": "Erde", "mkm": "Mio. km", "sunHint": "Ziehen, um die Sonne zu umkreisen · Zwei Finger zum Zoomen · Sonne 3× antippen", "ayHint": "Vers antippen, um die Bedeutung zu lesen", "sSound": "Ton", "sSoundD": "Weltraum-Atmosphäre"}};
 for (const k in L28) Object.assign(L[k], L28[k]);
+// [3.0] İletişim bölümü metinleri
+const L30 = {
+  en: { contactH: "Contact", contactD: "Questions, corrections or content removal requests about WorldMind:", contactPage: "Contact page" },
+  tr: { contactH: "İletişim", contactD: "WorldMind hakkında soru, düzeltme ya da içerik kaldırma talepleriniz için:", contactPage: "İletişim sayfası" },
+  it: { contactH: "Contatti", contactD: "Domande, correzioni o richieste di rimozione di contenuti su WorldMind:", contactPage: "Pagina dei contatti" },
+  ru: { contactH: "Контакты", contactD: "Вопросы, исправления и запросы на удаление материалов о WorldMind:", contactPage: "Страница контактов" },
+  fr: { contactH: "Contact", contactD: "Questions, corrections ou demandes de retrait de contenu concernant WorldMind :", contactPage: "Page de contact" },
+  es: { contactH: "Contacto", contactD: "Preguntas, correcciones o solicitudes de retirada de contenido sobre WorldMind:", contactPage: "Página de contacto" },
+  zh: { contactH: "联系我们", contactD: "有关 WorldMind 的问题、更正或内容移除请求：", contactPage: "联系页面" },
+  ar: { contactH: "اتصل بنا", contactD: "للأسئلة أو التصحيحات أو طلبات إزالة المحتوى بخصوص WorldMind:", contactPage: "صفحة الاتصال" },
+  de: { contactH: "Kontakt", contactD: "Fragen, Korrekturen oder Anfragen zur Entfernung von Inhalten zu WorldMind:", contactPage: "Kontaktseite" },
+};
+for (const k in L30) Object.assign(L[k], L30[k]);
+// [3.0] Haberin tamamı kaynağın kendi sitesinde okunur
+{ const R = { en: (h) => `Read the full story at ${h} ↗`, tr: (h) => `Haberin tamamını ${h} sitesinde oku ↗`,
+    it: (h) => `Leggi l'articolo completo su ${h} ↗`, ru: (h) => `Читать полностью на ${h} ↗`,
+    fr: (h) => `Lire l'article complet sur ${h} ↗`, es: (h) => `Leer la noticia completa en ${h} ↗`,
+    zh: (h) => `在 ${h} 阅读全文 ↗`, ar: (h) => `اقرأ الخبر كاملًا على ${h} ↗`, de: (h) => `Den ganzen Artikel auf ${h} lesen ↗` };
+  for (const k in R) L[k].readAt = R[k]; }
 { const W = { en: "visit venue", tr: "ziyaret yeri", it: "luogo della visita", ru: "место визита", fr: "lieu de la visite", es: "lugar de la visita", zh: "访问地点", ar: "مكان الزيارة", de: "Besuchsort" };
   for (const k in W) L[k].why_visit = (v) => `${W[k]}: ${v}`; }
 const LANGS = { en: "English", tr: "Türkçe", it: "Italiano", ru: "Русский", fr: "Français", es: "Español", zh: "中文", ar: "العربية", de: "Deutsch" };
@@ -1647,8 +1692,7 @@ function txSave() {
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden && TXQ.size && !txT && !txRun) txT = setTimeout(txPump, 400); });
 // Haberin paragrafları: kuyruğa öncelikli girer
-function leadParasEv(ev) { return (ev.lead || []).map(cleanPara).filter((p) => p.length > 40); }
-function ensureLeadTx(ev) { for (const p of leadParasEv(ev)) txAsk(p, "para", 2); }
+// [3.0] leadParasEv / ensureLeadTx kaldırıldı: makale paragrafı saklanmıyor, çevrilmiyor, gösterilmiyor.
 // Listede görünen haberler: başlık + özet + yer adı, sessizce
 function translateVisible(evs) {
   for (const e of evs) {
@@ -1940,7 +1984,7 @@ function titleContentSimilarity(title, content) {
   return hit / a.size;
 }
 function isTitleContentMismatch(ev, content) {
-  const c = content ?? (ev.description || (ev.lead || []).join(" "));
+  const c = content ?? (ev.description || "");
   return titleContentSimilarity(ev.title, c) < 0.4;
 }
 // 2.3: geçersiz koordinat (Null Island, sınır dışı değerler, ana ülkenin çok uzağı)
@@ -2076,7 +2120,7 @@ function addOne(src, ev) {
   const ref = REF.get(ev.id);
   if (ref && (!validCoord(ref, ev) || isEventTitle(ref.spot))) { REF.delete(ev.id); }
   else if (ref) Object.assign(ev, ref);
-  if (!ref && ev.url && DEEPC[ev.url]) { const d = DEEPC[ev.url]; if (d.r && validCoord(d.r, ev) && !isEventTitle(d.r.spot) && !(d.r.why || []).some((w) => w && isEventTitle(w[1]))) Object.assign(ev, d.r); if (d.cat && CATS[d.cat]) ev.cat = d.cat; if (d.lead) ev.lead = d.lead; ev.deep = true; }
+  if (!ref && ev.url && DEEPC[ev.url]) { const d = DEEPC[ev.url]; if (d.r && validCoord(d.r, ev) && !isEventTitle(d.r.spot) && !(d.r.why || []).some((w) => w && isEventTitle(w[1]))) Object.assign(ev, d.r); if (d.cat && CATS[d.cat]) ev.cat = d.cat; ev.deep = true; }
   if (!(ev.prec === "exact" || ev.prec === "inst")) applyAnchor(ev);
   if ((S.fresh.get(ev.id) || 0) > Date.now()) ev.live = true;
   ev.aktif = isActive(ev);
@@ -2115,7 +2159,8 @@ function replaceSource(src, list) {
   if (!changed) return;
   scheduleApply();
   added.filter((e) => e.prec !== "exact").forEach((e) => enqueueGeo(e));
-  added.forEach((e) => enqueueDeep(e));
+  // [3.0] Arka planda toplu makale okuma kaldırıldı: metin yalnızca kullanıcı bir haberi açtığında
+  //      ya da Zoom in dediğinde, o tek haber için okunur (select / pinpoint → deepLocate).
 }
 const TXKEEP = new Map();
 // [2.4] Kaynak güncellemeleri toplanır: birkaç kaynak art arda gelse de liste/filtre tek seferde, tarayıcı boştayken yenilenir
@@ -2551,7 +2596,7 @@ async function institution(country, topic) {
   INSTC[key] = res; saveINST(); return res;
 }
 /* ---------- Haber metnini okuma: tarih satırındaki şehir + metindeki mekân ---------- */
-const ARTC = new LRU(150), ARTIMG = new LRU(150);
+const ARTC = new LRU(150);   // [3.0] ARTIMG kaldırıldı: yayıncının fotoğrafları artık çekilmiyor
 async function readArticle(url) {
   if (ARTC.has(url)) return ARTC.get(url);
   const c = new AbortController(), t = setTimeout(() => c.abort(), 15000);
@@ -2561,14 +2606,7 @@ async function readArticle(url) {
     if (r.ok) {
       txt = await r.text();
       const i = txt.indexOf("Markdown Content:"); if (i >= 0) txt = txt.slice(i + 17);
-      const pics = [];
-      for (const m of txt.matchAll(/!\[([^\]]*)\]\((https?:[^)\s]+)/g)) {
-        const u = m[2];
-        if (/\.(svg|gif)(\?|$)|logo|icon|avatar|sprite|pixel|badge|placeholder|favicon|1x1|blank|spacer|author|byline|profile|ads?[./_-]/i.test(u)) continue;
-        if (!pics.some((x) => x.src === u)) pics.push({ src: u, cap: m[1].replace(/^Image \d+:?\s*/i, "").slice(0, 120) });
-        if (pics.length >= 5) break;
-      }
-      ARTIMG.set(url, pics);
+      // [3.0] Metin YALNIZCA konum ve kategori çıkarmak için okunur; hiçbir yerinde saklanmaz ya da gösterilmez.
       txt = txt.replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").slice(0, 9000);
     }
   } catch {} finally { clearTimeout(t); }
@@ -2599,15 +2637,15 @@ function dateline(txt) {
   return raw.toLocaleLowerCase(lc).replace(/(^|[\s-])\S/g, (x) => x.toLocaleUpperCase(lc));
 }
 const VENUE = new RegExp(`(?:\\bat|\\bin|\\binside|\\boutside|\\bnear)\\s+(?:the\\s+)?((?:${CAP}\\s+){0,4}(?:Centre|Center|Hall|Exhibition|Expo|Park|Square|Stadium|Arena|Museum|Theatre|Theater|Forum|Palace|Pavilion|Gallery|Library|Cathedral|Mosque|Church|University|School|Hospital|Airport|Station|Port|Market|Bridge|Street|Avenue|Boulevard|Embassy|Ministry|Parliament|Building|Plant|Factory|Camp|Prison|Court|Kremlin)(?:\\s+(?:of\\s+)?${CAP}){0,3})`, "gu");
-const DEEPC = (() => { try { return JSON.parse(localStorage.getItem("wm-deep") || "{}"); } catch { return {}; } })();
+const DEEPC = (() => { try { const o = JSON.parse(localStorage.getItem("wm-deep") || "{}");
+  for (const k in o) if (o[k] && o[k].lead) delete o[k].lead;   // [3.0] eski sürümden kalan makale metinleri cihazdan silinir
+  return o; } catch { return {}; } })();
 const saveDEEP = () => lazySave("deep", () => { try { const k = Object.keys(DEEPC); if (k.length > 500) for (const x of k.slice(0, 150)) delete DEEPC[x]; localStorage.setItem("wm-deep", JSON.stringify(DEEPC)); } catch {} });
 const deepable = (ev) => ev.url && !/wikipedia\.org|bsky\.app|gdacs|nasa\.gov/.test(ev.url);
 function applyDeep(ev, d) {
-  if (d.lead) ev.lead = d.lead;
   if (d.cat && d.cat !== ev.cat && CATS[d.cat]) applyCat(ev, d.cat);
   if (d.r && !(ev.prec === "exact" && d.r.prec !== "exact")) applyRef(ev, d.r);
   else if (S.sel === ev.id) renderCard(ev);
-  if (S.sel === ev.id && ev.lead) ensureLeadTx(ev);
 }
 function deepLocate(ev) { if (ev.deepP) return ev.deepP; if (ev.deep || !deepable(ev)) return Promise.resolve(); return (ev.deepP = deepLocate0(ev)); }
 async function deepLocate0(ev) {
@@ -2618,8 +2656,7 @@ async function deepLocate0(ev) {
   const paras0 = leadParas(txt);
   if (paras0.length && isTitleContentMismatch(ev, paras0.join(" "))) { integrityWarn(ev, "haber metni başlıkla uyuşmuyor"); DEEPC[ev.url] = {}; saveDEEP(); return; }
   const paras = paras0, body = txt.split(/\n\s*\n/).map((p) => p.replace(/\s+/g, " ").trim()).filter((p) => p.length > 60).slice(0, 8).join(" ");
-  const d = { lead: paras, cat: classifyDeep(ev.title, paras) };
-  if (paras.length) { ev.lead = paras; if (S.sel === ev.id && ev.moreOpen) refreshMore(ev); }   // [2.4] metin, konum aranırken bile hemen görünür
+  const d = { cat: classifyDeep(ev.title, paras) };   // [3.0] paragraflar yalnızca sınıflandırma ve konum için; saklanmaz
   // 1) Şehir: tarih satırı (en güçlü kanıt) > başlıktaki yer > metindeki "in/at X" > puanlı sözlük adayı
   const dl = dateline(txt), clean = scrub(body);
   const tries = [];
@@ -2668,6 +2705,7 @@ function applyCat(ev, c) {
 /* Arka plan analizi: her habere sırayla girilir (Jina sınırı ≈20/dk → 3,5 sn'de bir) */
 const AQ = []; let aqBusy = false;
 function enqueueDeep(ev) { if (!ev.deep && deepable(ev)) { if (DEEPC[ev.url]) { ev.deep = true; applyDeep(ev, DEEPC[ev.url]); } else AQ.push(ev); pumpDeep(); } }
+// [3.0] enqueueDeep artık kendiliğinden çağrılmaz; yalnızca kullanıcının açtığı haber okunur.
 async function pumpDeep() {
   if (aqBusy) return; aqBusy = true;
   while (AQ.length) {
@@ -2769,7 +2807,7 @@ function renderList() {
 }
 function descOf(ev) {
   const t = norm(ev.title).slice(0, 50);
-  const d = [ev.description, ev.lead?.[0], ev.ctx].find((x) => x && norm(x).slice(0, 50) !== t) || "";
+  const d = [ev.description, ev.ctx].find((x) => x && norm(x).slice(0, 50) !== t) || "";
   return d.replace(/\s+/g, " ").trim().slice(0, 240);
 }
 let pressing = false;
@@ -2786,7 +2824,7 @@ function renderListNow() {
     return `<li data-li="${esc(ev.id)}"${S.sel === ev.id ? ' class="open"' : ""}><button data-id="${esc(ev.id)}" ${S.sel === ev.id ? 'aria-current="true"' : ""} style="--c:${CATS[ev.cat]}">
     <span class="k"></span>
     <span class="tw"><span class="t">${titleH(ev)}</span>${d ? `<span class="d">${txSpan(d, "desc")}</span>` : ""}
-      <span class="m">${ev.aktif ? `<span class="st on">${T("on")}</span> · ` : ""}${esc(T(ev.cat))}${placeParts(ev).length ? " · " + placeH(ev) : ""}</span></span>
+      <span class="m">${ev.domain || ev.source ? `<b class="src">${esc(ev.domain || ev.source)}</b> · ` : ""}${ev.aktif ? `<span class="st on">${T("on")}</span> · ` : ""}${esc(T(ev.cat))}${placeParts(ev).length ? " · " + placeH(ev) : ""}</span></span>
     <span class="ago">${ev.live ? `<b class="new">${T("nw")}</b>` : ""}${esc(when(ev))}</span></button></li>`;
   }).join("");
   Lst.scrollTop = keepTop;
@@ -2988,13 +3026,34 @@ const PEOPLE = [
   [/\btedros\b/i, "Tedros Adhanom Ghebreyesus"], [/\blagarde\b/i, "Christine Lagarde"], [/\bpowell\b/i, "Jerome Powell"], [/\bmusk\b/i, "Elon Musk"],
 ];
 const WIMG = new LRU(200);
+// [3.0] Wikipedia görselleri: yalnızca ÖZGÜR lisanslı olanlar kullanılır ve lisansın istediği
+//      isim belirtme (fotoğrafçı + lisans + dosya sayfası bağlantısı) karta yazılır.
+//      "Adil kullanım" gerekçesiyle yüklenmiş görseller (film afişi, logo, bazı portreler) Wikipedia
+//      dışında kullanılamaz; bunlar lisans denetiminde elenir.
+const FREE_LIC = /^(cc0|cc[ -]by|cc[ -]sa|public domain|pd|gfdl|fal|ogl|attribution)/i;
+const wikiTxt = (h) => (new DOMParser().parseFromString(String(h || ""), "text/html").body.textContent || "").replace(/\s+/g, " ").trim();
+async function fileLicense(file) {
+  try {
+    const j = await getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&prop=imageinfo&iiprop=extmetadata&titles=" + encodeURIComponent("File:" + file), 9000);
+    const md = j.query?.pages?.[0]?.imageinfo?.[0]?.extmetadata; if (!md) return null;
+    if (String(md.NonFree?.value ?? "0") !== "0") return null;                       // adil kullanım: dışarıda kullanılamaz
+    const lic = wikiTxt(md.LicenseShortName?.value || md.License?.value || "");
+    if (!lic || !FREE_LIC.test(lic) || /fair use|non[- ]free/i.test(lic)) return null;
+    const who = wikiTxt(md.Artist?.value || md.Credit?.value || "").slice(0, 80);
+    return { lic, who, page: "https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(file.replace(/ /g, "_")) };
+  } catch { return null; }
+}
 async function wikiImage(q) {
   if (WIMG.has(q)) return WIMG.get(q);
   let r = null;
   try {
-    const j = await getJSON(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=1&prop=pageimages|description&piprop=thumbnail&pithumbsize=800&format=json&origin=*`, 9000);
+    const j = await getJSON(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=1&prop=pageimages|description&piprop=thumbnail|name&pithumbsize=800&format=json&origin=*`, 9000);
     const pg = Object.values(j.query?.pages || {})[0];
-    if (pg?.thumbnail?.source) r = { src: pg.thumbnail.source, cap: pg.title + (pg.description ? " · " + pg.description : ""), kind: "wiki" };
+    if (pg?.thumbnail?.source && pg.pageimage) {
+      const L0 = await fileLicense(pg.pageimage);
+      if (L0) r = { src: pg.thumbnail.source, cap: pg.title + (pg.description ? " · " + pg.description : ""),
+        credit: [L0.who, L0.lic].filter(Boolean).join(" · ") || L0.lic, link: L0.page, kind: "wiki" };
+    }
   } catch {}
   WIMG.set(q, r); return r;
 }
@@ -3002,18 +3061,16 @@ async function loadMedia(ev) {
   if (ev.mediaP) return ev.mediaP;
   ev.mediaP = (async () => {
     const text = ev.title + " " + (ev.description || "");
-    const news = (ev.imgs || []).map((x) => ({ ...x, kind: "news" }));
-    // 1) haberin kendi fotoğrafları (protestocular, çatışma, açıklama anı)
-    if (deepable(ev)) { try { await readArticle(ev.url); } catch {} for (const x of ARTIMG.get(ev.url) || []) news.push({ ...x, kind: "news" }); }
-    // 2) açıklamayı yapan kişi(ler) ve kurum
+    // [3.1] Yayıncı fotoğrafı HİÇ kullanılmaz — akışın kendi küçük resmi dahil. Gösterilen tek görsel
+    //      kaynağı, lisansı tek tek doğrulanmış özgür lisanslı Wikipedia/Commons dosyalarıdır.
+    // açıklamayı yapan kişi(ler) ve kurum (Wikipedia, özgür lisans)
     const who = PEOPLE.filter(([re]) => re.test(ev.title)).slice(0, 2).map(([, n]) => n);
     const inst = ev.spot && ev.why?.some((w) => w && (w[0] === "anchor" || w[0] === "inst")) ? ev.spot.split(",")[0] : null;
     const place = !inst && ev.prec === "exact" && ev.spot ? ev.spot.split(",")[0] : null;
     const extra = (await Promise.all([...who.map(wikiImage), inst ? wikiImage(inst) : null, place ? wikiImage(place + " " + (ev.g?.en || "")) : null])).filter(Boolean);
     const seen = new Set(), out = [];
-    for (const x of [...news, ...extra]) { const k = x.src.replace(/[?#].*$/, ""); if (seen.has(k)) continue; seen.add(k); out.push(x); }
+    for (const x of extra) { const k = x.src.replace(/[?#].*$/, ""); if (seen.has(k)) continue; seen.add(k); out.push(x); }
     ev.media = out.slice(0, 8);
-    if (!ev.imgs?.length && news.length) ev.imgs = news.slice(0, 3);
     if (S.sel === ev.id) renderMedia(ev);
     renderList();
     return ev.media;
@@ -3028,7 +3085,7 @@ function mediaHTML(ev) {
   const lab = cur.kind === "wiki" ? cur.cap : (cur.cap || T("photoNews"));
   return `<div class="media" id="media">
     <figure class="hero"><img src="${esc(cur.src)}" alt="${esc(cur.cap || ev.title)}" referrerpolicy="no-referrer" loading="eager" data-bad="${i}">
-      <figcaption><span class="mk">${esc(T(cur.kind === "wiki" ? "photoWho" : "photoNews"))}</span>${cur.kind === "wiki" || cur.cap ? (cur.cap ? txSpan(lab, "cap") : esc(lab)) : ""}</figcaption>
+      <figcaption><span class="mk">${esc(T(cur.kind === "wiki" ? "photoWho" : "photoNews"))}</span>${cur.kind === "wiki" || cur.cap ? (cur.cap ? txSpan(lab, "cap") : esc(lab)) : ""}${cur.credit ? `<span class="cred">${cur.link ? `<a href="${esc(cur.link)}" target="_blank" rel="noopener">${esc(cur.credit)}</a>` : esc(cur.credit)}</span>` : ""}</figcaption>
       ${m.length > 1 ? `<span class="cnt">${i + 1} / ${m.length}</span>` : ""}</figure>
     ${m.length > 1 ? `<div class="thumbs">${m.map((x, j) => `<button data-mi="${j}" ${j === i ? 'aria-current="true"' : ""}><img src="${esc(x.src)}" alt="" referrerpolicy="no-referrer" loading="lazy" data-bad="${j}"></button>`).join("")}</div>` : ""}
   </div>`;
@@ -3051,13 +3108,14 @@ function renderCard(ev) {
   const keep = old && card.dataset.ev === ev.id ? old.scrollTop : 0;   // [2.4] aynı haber yeniden çizilince okunan yer korunur
   card.dataset.ev = ev.id;
   card.innerHTML = `
-    <div class="ctop"><span class="pill" style="--c:${CATS[ev.cat]}">${esc(T(ev.cat))}</span>
-      <span class="st ${ev.aktif ? "on" : "off"}">${T(ev.aktif ? "onL" : "offL")}</span>
-      ${lv ? `<span class="alert">${esc(T("alert"))}: ${esc(lv)}</span>` : ""}
-      <button class="x" id="cx" aria-label="${esc(T("close"))}">×</button></div>
+    <div class="ctop">
+      <div class="crow"><span class="pill" style="--c:${CATS[ev.cat]}">${esc(T(ev.cat))}</span>
+        <span class="st ${ev.aktif ? "on" : "off"}">${T(ev.aktif ? "onL" : "offL")}</span>
+        ${lv ? `<span class="alert">${esc(T("alert"))}: ${esc(lv)}</span>` : ""}
+        <button class="x" id="cx" aria-label="${esc(T("close"))}">×</button></div>
+      <h2 class="chead">${titleH(ev)}</h2></div>
     <div class="cbody" id="cbody">
     ${mediaHTML(ev)}
-    <h2>${titleH(ev)}</h2>
     ${showOrig ? `<span class="tx">${esc(T("autoTx"))}</span><div class="orig">${esc(T("original"))}: ${esc(ev.title)}</div>` : ""}
     <div class="meta">
       ${placeParts(ev).length ? `<span>${placeH(ev)}</span>` : ""}
@@ -3081,7 +3139,7 @@ function renderCard(ev) {
   if (ev.media) renderMedia(ev); else loadMedia(ev);
   $("cx").onclick = closeSel;
   $("moreBtn").onclick = () => { ev.moreOpen = !ev.moreOpen; renderCard(ev); if (ev.moreOpen) { loadMore(ev); requestAnimationFrame(() => $("more")?.scrollIntoView({ block: "start", behavior: "smooth" })); } };
-  $("lvBtn").onclick = () => { ev.lvOpen = !ev.lvOpen; renderCard(ev); if (ev.lvOpen && !ev.lv) loadLive(ev); };
+  $("lvBtn").onclick = () => { ev.lvOpen = !ev.lvOpen; renderCard(ev); };
   if (keep) $("cbody").scrollTop = keep;
   syncZoomBtn();
   placeCard();
@@ -3101,58 +3159,18 @@ function translateEvent(ev) {                         // [2.8] kartın tüm alan
   for (const x of placeParts(ev)) txAsk(x, "place", 3);
   for (const a of (ev.articles || []).slice(0, 8)) if (a.title) txAsk(a.title, "title", 2.5);
   for (const m of ev.media || []) if (m.cap) txAsk(m.cap, "cap", 2.4);
-  ensureLeadTx(ev);
 }
 /* ---------- Canlı yayın: bölge yayınları (YouTube), haberdeki video, 7/24 haber kanalları ---------- */
 const CHANNELS = [
   { n: "Al Jazeera", id: "UCNye-wNBqNL5ZzHSJj3l8Bg" }, { n: "France 24", id: "UCQfwfsi5VrQ8yKZ-UWmAEFg" },
   { n: "Sky News", id: "UCoMdktPbSTixAyNGwb-UYkQ" }, { n: "DW News", id: "UCknLrEdhRCp1aegoMqRaCZg" },
 ];
-// YouTube'u anahtarsız aktaran herkese açık servisler (Piped, Invidious). Hepsi aynı anda denenir, ilk cevap veren kullanılır.
-const PIPED = ["pipedapi.kavin.rocks", "pipedapi.adminforge.de", "api.piped.private.coffee", "pipedapi.r4fo.com", "pipedapi.leptons.xyz"];
-const INV = ["inv.nadeko.net", "yewtu.be", "invidious.nerdvpn.de", "iv.ggtyler.dev", "invidious.f5.si", "inv.tux.pizza"];
-const LIVEC = new LRU(100);
+// [3.0] Bölge canlı yayın araması kaldırıldı: gayriresmi YouTube aktarıcıları (Piped/Invidious) artık kullanılmıyor.
+//      Oynatma zaten YouTube'un resmi gömme çerçevesiyle yapılır; aşağıda yalnızca haberin kendi videosu ve resmi haber kanalları kalır.
 const placeName = (ev) => placeName0(ev) || ev.g?.en || (ev.place || "").split(",")[0] || "";
-async function viaPiped(inst, q) {
-  const j = await getJSON(`https://${inst}/search?filter=videos&q=${encodeURIComponent(q)}`, 9000);
-  if (!Array.isArray(j.items)) throw new Error("bad");
-  return j.items.filter((it) => it.duration === -1 || it.isLive).map((it) => {
-    const id = (it.url || "").split("v=")[1]?.split("&")[0];
-    return { id, title: it.title, ch: it.uploaderName, img: id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : it.thumbnail };
-  });
-}
-async function viaInvidious(inst, q) {
-  const j = await getJSON(`https://${inst}/api/v1/search?type=video&features=live&q=${encodeURIComponent(q)}`, 9000);
-  if (!Array.isArray(j)) throw new Error("bad");
-  return j.filter((it) => it.liveNow || it.isLive || it.lengthSeconds === 0)
-    .map((it) => ({ id: it.videoId, title: it.title, ch: it.author, img: `https://i.ytimg.com/vi/${it.videoId}/mqdefault.jpg` }));
-}
-const anyOk = (ps) => Promise.any(ps.map((p) => p.then((r) => (Array.isArray(r) ? r : Promise.reject()))));
-async function liveSearch(place) {
-  const c = LIVEC.get(place);
-  if (c && Date.now() - c.t < 10 * 60000) return c.list;
-  const qs = [`${place} live`, `${place} live cam`];
-  const res = await Promise.allSettled(qs.map((q) => anyOk([...PIPED.map((i) => viaPiped(i, q)), ...INV.map((i) => viaInvidious(i, q))])));
-  if (res.every((r) => r.status === "rejected")) throw new Error("down");
-  const seen = new Set();
-  const list = res.flatMap((r) => r.value || []).filter((v) => v.id && !seen.has(v.id) && seen.add(v.id)).slice(0, 8);
-  LIVEC.set(place, { t: Date.now(), list }); return list;
-}
-async function loadLive(ev) {
-  ev.lv = { busy: true }; if (S.sel === ev.id) renderCard(ev);
-  try { ev.lv = { list: await liveSearch(placeName(ev)) }; }
-  catch { ev.lv = { err: "fail" }; }
-  if (S.sel === ev.id) renderCard(ev);
-}
 function liveHTML(ev) {
   let h = "";
   if (ev.video) h += `<h3>${esc(T("lvVidT"))}</h3><button class="act" data-tv="hls" data-src="${esc(ev.video)}" data-t="${esc(titleOf(ev))}">${esc(T("lvVid"))}</button>`;
-  h += `<h3>${esc(T("lvTitle"))} · ${esc(placeName(ev))}</h3>`;
-  const lv = ev.lv || {};
-  if (lv.busy) h += `<span class="wait">${esc(T("lvSearching"))}</span>`;
-  else if (lv.err) h += `<p class="wait">${esc(T("lvFail"))}</p>`;
-  else if (lv.list && !lv.list.length) h += `<p class="wait">${esc(T("lvNone"))}</p>`;
-  else if (lv.list) h += `<div class="vids">${lv.list.map((v) => `<button class="vid" data-tv="yt" data-id="${esc(v.id)}" data-t="${esc(v.title)}">${v.img ? `<img src="${esc(v.img)}" alt="" loading="lazy">` : ""}<span>${esc(v.title)}<small>${esc(v.ch || "")}</small></span></button>`).join("")}</div>`;
   h += `<h3>${esc(T("lvNews"))}</h3><div class="chans">${CHANNELS.map((c) => `<button class="act" data-tv="ch" data-id="${c.id}" data-t="${esc(c.n)}">${esc(c.n)}</button>`).join("")}</div>`;
   return h;
 }
@@ -3190,47 +3208,26 @@ function moreHTML(ev) {
     ((ev.g && o.g === ev.g) || (Math.abs(o.lat - ev.lat) < 3 && Math.abs(o.lon - ev.lon) < 3)))
     .sort((a, b) => (b.aktif - a.aktif) || (b.time || 0) - (a.time || 0)).slice(0, 5);
   let h = "";
-  // 1) Haberin kendisi: ilk paragraf giriş (büyük), devamı düzgün paragraflar
-  let paras = [];
-  if (ev.lead?.length) { ensureLeadTx(ev); paras = leadParasEv(ev); }
-  if (!paras.length) { const d = cleanPara(ev.description || ev.ctx || ""); if (d.length > 60 && norm(d).slice(0, 50) !== norm(ev.title).slice(0, 50)) paras = [cutAt(d, 600)]; }
+  // [3.0] 1) Yalnızca yayıncının kendi akışında sunduğu kısa özet. Makale metni hiçbir zaman gösterilmez;
+  //      okumak isteyen kullanıcı kaynağın kendi sitesine yönlendirilir.
+  const sum = cleanPara(ev.description || ev.ctx || "");
+  const showSum = sum.length > 40 && norm(sum).slice(0, 50) !== norm(ev.title).slice(0, 50);
   h += `<div class="sec"><h3>${esc(T("fromArticle"))}${ev.domain ? " · " + esc(ev.domain) : ""}</h3>`;
-  if (paras.length) h += `<p class="lede">${txSpan(paras[0], "para")}</p>` + paras.slice(1).map((p) => `<p class="par">${txSpan(p, "para")}</p>`).join("");
-  else h += `<span class="wait">${esc(deepable(ev) && !ev.deep ? T("reading") : T("searching"))}</span>`;
+  if (showSum) h += `<p class="lede">${txSpan(cutAt(sum, 320), "para")}</p>`;
+  if (ev.url) h += `<p><a class="gosrc" href="${esc(ev.url)}" target="_blank" rel="noopener">${esc(T("readAt", hostOf(ev.url) || ev.domain || ev.source || ""))}</a></p>`;
   h += `</div>`;
-  // 2) Aynı olayı veren diğer kaynaklar: her birinden haberin özünü taşıyan bir paragraf
-  if (ev.rel?.length) h += `<div class="sec"><h3>${esc(T("otherOutlets"))}</h3>${ev.rel.map((r) => `<blockquote>${txSpan(r.text, "para")}<cite><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.host)} ↗</a></cite></blockquote>`).join("")}</div>`;
-  else if (ev.relBusy) h += `<div class="sec"><h3>${esc(T("otherOutlets"))}</h3><span class="wait">${esc(T("searching"))}</span></div>`;
-  // 3) Arka plan (Wikipedia)
+  // 2) Arka plan (Wikipedia)
   h += `<div class="sec"><h3>${esc(T("bg"))}</h3>`;
   if (!m) h += `<span class="wait">${esc(T("searching"))}</span>`;
   else if (!m.length) h += `<p class="wait">${esc(T("noMore"))}</p>`;
-  else h += m.map((w) => `<div class="wk">${w.img ? `<img src="${esc(w.img)}" alt="">` : ""}<b>${esc(w.title)}</b><p>${esc(cutAt(w.text, 700))}</p><a href="${esc(w.url)}" target="_blank" rel="noopener">${esc(T("readWiki"))}</a></div>`).join("");
+  else h += m.map((w) => `<div class="wk"><b>${esc(w.title)}</b><p>${esc(cutAt(w.text, 700))}</p><a href="${esc(w.url)}" target="_blank" rel="noopener">${esc(T("readWiki"))}</a></div>`).join("");
   h += `</div>`;
   if (near.length) h += `<div class="sec"><h3>${esc(T("nearby"))}</h3><ul>${near.map((o) => `<li><button data-go="${esc(o.id)}">${titleH(o)}<small>${esc(T(o.cat))} · ${esc(T(o.aktif ? "on" : "off"))} · ${esc(when(o))}</small></button></li>`).join("")}</ul></div>`;
   const arts = ev.articles?.length ? ev.articles : ev.url ? [{ url: ev.url, title: ev.domain || ev.source }] : [];
   if (arts.length) h += `<div class="sec"><h3>${esc(T("srcs"))}</h3><ul>${arts.slice(0, 10).map((a) => `<li><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(hostOf(a.url) || a.title)} ↗</a></li>`).join("")}</ul></div>`;
   return h;
 }
-// Diğer kaynakların metninden, ana haberde olmayan en bilgilendirici paragraf (en fazla 2 kaynak)
-async function loadRelated(ev) {
-  if (ev.rel || ev.relBusy) return;
-  const mainHost = hostOf(ev.url || "");
-  const cands = (ev.articles || []).filter((a) => a.url && a.url !== ev.url && hostOf(a.url) !== mainHost && deepable({ url: a.url }))
-    .filter((a, i, arr) => arr.findIndex((b) => hostOf(b.url) === hostOf(a.url)) === i).slice(0, 2);
-  if (!cands.length) { ev.rel = []; return; }
-  ev.relBusy = true; if (S.sel === ev.id && ev.moreOpen) refreshMore(ev);
-  const have = simTokens((ev.lead || []).join(" ") + " " + ev.title), out = [];
-  for (const a of cands) {
-    try {
-      const ps = leadParas(await readArticle(a.url), 4);
-      const best = ps.find((p) => { const t = simTokens(p); let k = 0; for (const w of t) if (have.has(w)) k++; return t.size > 6 && k / t.size < 0.7; }) || ps[0];
-      if (best) out.push({ host: hostOf(a.url), url: a.url, text: cutAt(best, 520) });
-    } catch {}
-  }
-  ev.rel = out; ev.relBusy = false;
-  if (S.sel === ev.id && ev.moreOpen) refreshMore(ev);
-}
+// [3.0] loadRelated kaldırıldı: başka yayıncıların metinlerinden alıntı yapılmıyor.
 // Yalnızca "daha fazla bilgi" kutusu yenilenir: kart yeniden çizilmez, okunan yer kaymaz
 function refreshMore(ev) { const box = $("more"); if (box && $("card").dataset.ev === ev.id) box.innerHTML = moreHTML(ev); }
 $("card").addEventListener("click", (e) => {
@@ -3255,10 +3252,9 @@ async function wikiSummary(title, lang) {
 async function loadMore(ev) {
   const lang = LANG;
   ev.more = ev.more || {};
-  ensureLeadTx(ev); loadRelated(ev);                            // [2.4] diğer kaynakların paragrafları
   if (ev.more[lang]) return;
   // Olaya özgü varlıklar: başlık ve haber metnindeki özel adlar (kişi, kurum, yer, olay)
-  const ents = new Set((ev.title + " " + (ev.lead || []).join(" ")).match(/\b\p{Lu}[\p{L}'’-]{3,}/gu)?.map((w) => norm(w)).filter((w) => !STOP.has(w) && !GENERIC_W.has(w)) || []);
+  const ents = new Set((ev.title + " " + (ev.description || "")).match(/\b\p{Lu}[\p{L}'’-]{3,}/gu)?.map((w) => norm(w)).filter((w) => !STOP.has(w) && !GENERIC_W.has(w)) || []);
   const specific = (t) => !/^(list of|timeline of|outline of|index of)/i.test(t) && !GENERIC_T.test(t) && !isCountryTitle(t);
   let titles = (ev.links || []).filter((t) => !GAZ.some((g) => norm(g.en) === norm(t) || norm(g.ad) === norm(t))).filter(specific).slice(0, 4);
   if (titles.length < 2 && ents.size) {
@@ -3317,7 +3313,7 @@ function progFor(totalSec, run) {
 async function sharpen(ev) {
   if (ev.prec === "exact" || ev.prec === "inst" || ev.prec === "city" || !ev.g) return;
   const ctry = countryOf(ev.g); if (!ctry) return;
-  const text = ev.title + " " + (ev.ctx || "") + " " + (ev.lead || []).slice(0, 2).join(" ");
+  const text = ev.title + " " + (ev.ctx || "") + " " + (ev.description || "");
   const inst = await institution(ctry, topicOf(text, ev.cat));
   if (inst && !inst.city) applyRef(ev, { lat: inst.lat, lon: inst.lon, prec: "inst", spot: inst.name, why: [["inst", inst.name]] });
   else if (inst && ev.prec === "country") applyRef(ev, { lat: inst.lat, lon: inst.lon, prec: "capital", spot: `${inst.name}, ${ctry.en}`, why: [["capital", inst.name]] });
@@ -3681,9 +3677,7 @@ async function loadAgency() {
       const cat = classify(title + " " + extra); if (cat === "diger") continue;
       const g = geocode(title, extra); if (!g) continue;
       const id = "b:" + p.uri, [dy, dx] = jitter(id, g.country ? 1.2 : 0.12);
-      const em = p.embed || {}, md = em.media || {};
-      const imgs = [...(em.images || []), ...(md.images || [])].map((x) => ({ src: x.fullsize || x.thumb, cap: x.alt || "" }))
-        .concat([ex?.thumb].filter(Boolean).map((u) => ({ src: u, cap: "" }))).filter((x) => x.src).slice(0, 4);
+      const imgs = [];   // [3.1] ajansın gönderisindeki fotoğraflar kullanılmaz
       const item = { id, cat, g, imgs, prec: g.country ? "country" : "city", title, description: ex?.title && r.text ? r.text : (ex?.description || ""), time, video: vid?.playlist || null, lat: g.lat + dy, lon: g.lon + dx,
         url: ex?.uri || `https://bsky.app/profile/${p.author.handle}/post/${p.uri.split("/").pop()}`, domain: p.author.displayName || h, source: "Bluesky" };
       BSK.set(p.uri, item); items.push(item);
@@ -3697,7 +3691,6 @@ async function loadAgency() {
 }
 /* ---------- RSS akışları (CORS vekili üzerinden, 5 dk'da bir) ---------- */
 // Dünya haberleri + konuya göre son 24 saat taraması (Google News: protesto, saldırı, afet, siyasi kriz — her ülkeden)
-const GN = (q, hl = "en-US", gl = "US", ceid = "US:en") => `https://news.google.com/rss/search?q=${encodeURIComponent(q + " when:1d")}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
 const RSS_FEEDS = [
   { n: "Reuters", u: "https://feeds.reuters.com/reuters/topNews" },
   { n: "AP", u: "https://apnews.com/apf-topnews.rss" },
@@ -3719,11 +3712,6 @@ const RSS_FEEDS = [
   { n: "Sky News", u: "https://feeds.skynews.com/feeds/rss/world.xml" },
   { n: "UN News", u: "https://news.un.org/feed/subscribe/en/news/all/rss.xml" },
   { n: "Anadolu", u: "https://www.aa.com.tr/en/rss/default?cat=world" },
-  { n: "Google News · protests", u: GN("protest OR protesters OR demonstrators OR rally OR march OR \"general strike\"") },
-  { n: "Google News · clashes", u: GN("airstrike OR shelling OR clashes OR \"drone attack\" OR gunmen OR bombing") },
-  { n: "Google News · disasters", u: GN("earthquake OR flood OR wildfire OR explosion OR landslide OR cyclone") },
-  { n: "Google News · politics", u: GN("parliament OR election OR \"prime minister\" OR president OR sanctions OR resigns") },
-  { n: "Google Haberler · eylem", u: GN("protesto OR eylem OR miting OR yürüyüş OR grev", "tr", "TR", "TR:tr") },
 ];
 const PROXIES = [(u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u), (u) => "https://corsproxy.io/?url=" + encodeURIComponent(u)];
 async function getText(url, ms = 15000) {
@@ -3746,10 +3734,7 @@ async function loadRSS() {
       const title = stripHtml(q("title")).replace(/\s+[-–|]\s+[^-–|]{2,40}$/, ""); if (title.length < 20) continue;
       const rawD = q("description") || q("summary") || q("content");
       const desc = stripHtml(rawD).slice(0, 600);
-      const imgs = [...it.getElementsByTagNameNS("*", "content"), ...it.getElementsByTagNameNS("*", "thumbnail"), ...it.querySelectorAll("enclosure")]
-        .filter((m) => /image|jpe?g|png|webp/i.test((m.getAttribute("type") || m.getAttribute("medium") || "") + (m.getAttribute("url") || "")))
-        .map((m) => m.getAttribute("url")).concat([(/<img[^>]+src=["']([^"']+)/i.exec(rawD) || [])[1]]).filter((u) => u && /^https?:/.test(u))
-        .filter((u, i, a) => a.indexOf(u) === i).slice(0, 3).map((u) => ({ src: u, cap: "" }));
+      const imgs = [];   // [3.1] akıştan görsel alınmaz: yayıncının fotoğrafı hiçbir biçimde kullanılmıyor
       const link = q("link") || it.querySelector("link")?.getAttribute("href") || "";
       const time = Date.parse(q("pubDate") || q("published") || q("updated") || q("dc\\:date") || it.getElementsByTagNameNS("*", "date")[0]?.textContent) || null;
       if (time && Date.now() - time > MAX_AGE) continue;
@@ -3797,7 +3782,7 @@ async function loadFreeNews() {
   const j = await getJSONany("https://freenewsapi.ai/v1/search?q=conflict,protest,earthquake,attack&date=24h&size=30&sort=date", 15000);
   return pickArr(j).map((a) => newsItem("fn", { title: a.title, desc: a.description || a.summary, url: a.url || a.link,
     time: toTime(a.published_at || a.publishedAt || a.date), domain: a.host || a.source?.name || a.source || hostOf(a.url || ""),
-    hint: a.country || "", imgs: [a.image || a.image_url || a.urlToImage].filter(Boolean).map((u) => ({ src: u, cap: "" })) }, "FreeNewsApi")).filter(Boolean);
+    hint: a.country || "", imgs: [] }, "FreeNewsApi")).filter(Boolean);   // [3.1] yayıncı görseli yok
 }
 async function loadNewsline() {
   const j = await getJSONany("https://news.heyitsmejosh.com/api/stories?limit=120", 15000);
