@@ -724,6 +724,47 @@ body.sunmode #sunEarth,body.sunmode #hud{display:none!important}
   color:#ffd2d5;background:rgba(120,10,18,.28);border:1px solid rgba(224,26,37,.55);box-shadow:0 0 12px rgba(224,26,37,.2)}
 .sher .sall:hover,.sher .sall:focus-visible{outline:none;border-color:#ff5a64;box-shadow:0 0 18px rgba(224,26,37,.5)}
 [dir="rtl"] .sher .sall{margin-left:0;margin-right:auto}
+/* ===================== [3.3] Yer arama + gökyüzü modu ===================== */
+/* Arama paneli: Ayarlar paneliyle aynı dil, aynı yer */
+#find{position:fixed;z-index:9;top:calc(var(--top) + 66px);right:max(12px,calc((100vw - min(760px, 100vw - 24px)) / 2));width:min(340px,calc(100vw - 24px));
+  max-height:calc(100% - var(--top) - var(--bot) - 90px);display:flex;flex-direction:column;gap:10px;padding:14px 16px 12px;border-radius:18px;
+  border:1px solid rgba(140,228,255,.22);background:linear-gradient(180deg,rgba(7,12,18,.97),rgba(3,6,10,.97));
+  box-shadow:0 24px 60px rgba(0,0,0,.65),0 0 30px rgba(60,200,245,.08);color:var(--ink);
+  backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}
+#find[hidden]{display:none}
+#fq{width:100%;background:rgba(5,9,15,.7);border:1px solid var(--line);border-radius:999px;padding:10px 14px;color:var(--ink);font:400 13.5px var(--f-ui);
+  transition:border-color .2s, box-shadow .2s}
+#fq:focus{outline:none;border-color:var(--line-2);box-shadow:0 0 0 3px rgba(125,216,255,.08)}
+#fq::placeholder{color:var(--mute)}
+#fres{list-style:none;margin:0;padding:0;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:grid;gap:2px;align-content:start}
+#fres li button{display:grid;gap:2px;width:100%;text-align:left;background:none;border:0;border-radius:10px;padding:9px 10px;cursor:pointer;color:var(--ink)}
+#fres li button:hover,#fres li button:focus-visible{background:rgba(125,216,255,.08);outline:none}
+#fres b{font:600 13.5px/1.32 var(--f-ui);color:#fff}
+#fres small{font:400 10.5px/1.35 var(--f-data);color:var(--mute);overflow:hidden;text-overflow:ellipsis}
+#fres .fmsg{padding:14px 10px;font:400 12.5px/1.45 var(--f-ui);color:var(--mute);text-align:center}
+.fcred{font:400 9.5px/1.4 var(--f-data);letter-spacing:.05em;color:var(--mute);border-top:1px solid rgba(150,232,255,.1);padding-top:8px}
+.fcred a{color:var(--mute);text-decoration:underline;text-underline-offset:2px}
+.fcred a:hover{color:var(--signal)}
+[dir="rtl"] #find{text-align:right}
+/* Gökyüzüne bak / Geri: ZOOM düğmeleriyle aynı deseni kullanır */
+#skyLook{position:fixed;left:50%;top:calc(var(--top) + 70px);transform:translateX(-50%);width:min(340px,calc(100vw - 32px));z-index:9}
+#skyOut{position:fixed;left:50%;bottom:calc(var(--bot) + 22px);transform:translateX(-50%);width:min(340px,calc(100vw - 32px));z-index:12}
+#skyLook[hidden],#skyOut[hidden]{display:none}
+#skyLook:active,#skyOut:active{transform:translateX(-50%) scale(.975)}
+/* Gökyüzü modunda ekranda yalnızca gökyüzü ve tek düğme kalır */
+body.skymode .bar,body.skymode #panel,body.skymode #card,body.skymode #settings,body.skymode #find,
+body.skymode #toast,body.skymode #tv,body.skymode #skyLook,body.skymode #hud,body.skymode #sunEarth{display:none!important}
+body.skymode .cesium-widget-credits,body.skymode .cesium-viewer-bottom{opacity:.5}
+#skyHint{position:fixed;left:50%;top:calc(var(--top) + 30px);transform:translateX(-50%);z-index:12;width:max-content;max-width:calc(100vw - 40px);text-align:center;
+  font:400 11.5px/1.5 var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:rgba(200,235,250,.85);
+  text-shadow:0 1px 10px rgba(0,0,0,.85);pointer-events:none;animation:skyHintIn 1s ease both}
+#skyHint[hidden]{display:none}
+#skyHint b{display:block;margin-bottom:7px;font:300 clamp(19px,4.6vw,32px)/1.12 "Jost","Archivo",sans-serif;letter-spacing:.26em;
+  text-transform:none;color:#fff;text-shadow:0 0 22px rgba(125,216,255,.45),0 2px 14px rgba(0,0,0,.8)}
+@keyframes skyHintIn{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+body.skymode{cursor:grab}
+body.skydrag{cursor:grabbing}
+@media (prefers-reduced-motion:reduce){#skyHint{animation:none}}
 </style>
 </head>
 <body class="splashing">
@@ -905,6 +946,7 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   <div class="brand"><canvas class="mlogo" id="bLogo" width="96" height="96"></canvas><b>WORLDMIND</b></div>
   <div class="live"><i class="dot"></i><span class="lbl" data-i="liveLbl">LIVE</span><span id="upd" hidden></span></div>
   <div class="spacer"></div>
+  <button class="nbtn gearb" id="findBtn" aria-pressed="false" aria-controls="find" aria-label="Search a place" data-ia="findLbl"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.4" stroke="currentColor" stroke-width="1.6"/><path d="m15.8 15.8 4.4 4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
   <button class="nbtn gearb" id="setBtn" aria-pressed="false" aria-controls="settings" aria-label="Settings" data-ia="settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.6 7.6 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></button>
   <button class="nbtn wmn" id="listBtn" aria-pressed="false" aria-controls="panel"><span class="nb-i"></span><span class="gx" id="newsLbl" data-t="NEWS WM">NEWS WM</span></button>
 </header>
@@ -929,6 +971,7 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   <label class="sw"><span><span data-i="sClouds">Clouds</span><small data-i="sCloudsD">Live satellite clouds, updated every 3 hours</small></span><input type="checkbox" id="s_clouds"><i></i></label>
   <label class="sw"><span><span data-i="sNight">City lights at night</span><small data-i="sNightD">NASA night-time lights on the dark side</small></span><input type="checkbox" id="s_night"><i></i></label>
   <label class="sw"><span><span data-i="sSun">Day and night</span><small data-i="sSunD">Real sun position · off = always daylight</small></span><input type="checkbox" id="s_sun"><i></i></label>
+  <label class="sw"><span><span data-i="sMoon">The Moon</span><small data-i="sMoonD">The real Moon, at its true position in the sky</small></span><input type="checkbox" id="s_moon"><i></i></label>
   <label class="sw"><span><span data-i="sAtmo">Atmosphere glow</span><small data-i="sAtmoD">Turquoise halo around the Earth</small></span><input type="checkbox" id="s_atmo"><i></i></label>
   <label class="sw"><span><span data-i="sRot">Auto-rotate</span><small data-i="sRotD">The globe turns slowly when idle</small></span><input type="checkbox" id="s_rotate"><i></i></label>
   <label class="sw"><span><span data-i="sSound">Sound</span><small data-i="sSoundD">Space ambience</small></span><input type="checkbox" id="s_sound"><i></i></label>
@@ -946,6 +989,12 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
     <a class="privlink" href="privacy.html" target="_blank" rel="noopener" data-i="privacy">Privacy</a>
   </div>
 </section>
+<section id="find" hidden aria-label="Search a place">
+  <div class="shead"><span class="stitle" data-i="findH">Find</span><button class="x" id="findClose" aria-label="Close">×</button></div>
+  <input id="fq" type="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <ul id="fres"></ul>
+  <div class="fcred">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Photon</div>
+</section>
 <section id="card" hidden></section>
 
 <div id="hud" hidden aria-live="polite">
@@ -956,6 +1005,10 @@ $("spWord").innerHTML = [..."WORLDMIND"].map((c, i) => `<span style="animation-d
   <div class="hud-read" id="hudRead"></div>
   <button id="hudOut" class="zbtn out solo" hidden></button>
 </div>
+
+<button id="skyLook" class="zbtn" hidden></button>
+<button id="skyOut" class="zbtn out" hidden></button>
+<div id="skyHint" hidden aria-live="polite"></div>
 
 <section id="tv" hidden>
   <div class="tvbar"><span class="tvlive" data-i="tvLive"></span><span id="tvTitle"></span>
@@ -1282,6 +1335,49 @@ const L30 = {
   de: { contactH: "Kontakt", contactD: "Fragen, Korrekturen oder Anfragen zur Entfernung von Inhalten zu WorldMind:", contactPage: "Kontaktseite" },
 };
 for (const k in L30) Object.assign(L[k], L30[k]);
+// [3.3] Yer arama + gökyüzü modu metinleri
+const L31 = {
+  en: { findLbl: "Search a place", findH: "Find", findPh: "City, district or landmark", findNone: "No place found", findErr: "Search is unavailable right now", findSearching: "Searching…",
+        skyLook: "Look up", skyLookD: "The real sky above this spot", skyBack: "Back", skyBackD: "Back to the map",
+        skyDrag: "Drag to turn the sky", skyDay: "It is daytime here · the stars come out after sunset" },
+  tr: { findLbl: "Yer ara", findH: "Ara", findPh: "Şehir, semt ya da yapı", findNone: "Yer bulunamadı", findErr: "Arama şu an çalışmıyor", findSearching: "Aranıyor…",
+        skyLook: "Yukarı bak", skyLookD: "Buranın üzerindeki gerçek gökyüzü", skyBack: "Geri", skyBackD: "Haritaya dön",
+        skyDrag: "Gökyüzünü çevirmek için sürükle", skyDay: "Burada şu an gündüz · yıldızlar gün battıktan sonra çıkar" },
+  it: { findLbl: "Cerca un luogo", findH: "Cerca", findPh: "Città, quartiere o monumento", findNone: "Nessun luogo trovato", findErr: "La ricerca non è disponibile ora", findSearching: "Ricerca…",
+        skyLook: "Guarda su", skyLookD: "Il cielo reale sopra questo punto", skyBack: "Indietro", skyBackD: "Torna alla mappa",
+        skyDrag: "Trascina per girare il cielo", skyDay: "Qui è giorno · le stelle escono dopo il tramonto" },
+  ru: { findLbl: "Найти место", findH: "Поиск", findPh: "Город, район или объект", findNone: "Место не найдено", findErr: "Поиск сейчас недоступен", findSearching: "Поиск…",
+        skyLook: "Посмотреть вверх", skyLookD: "Настоящее небо над этим местом", skyBack: "Назад", skyBackD: "Вернуться к карте",
+        skyDrag: "Проведите, чтобы повернуть небо", skyDay: "Здесь день · звёзды появятся после заката" },
+  fr: { findLbl: "Chercher un lieu", findH: "Chercher", findPh: "Ville, quartier ou monument", findNone: "Aucun lieu trouvé", findErr: "La recherche est indisponible", findSearching: "Recherche…",
+        skyLook: "Regarder le ciel", skyLookD: "Le vrai ciel au-dessus de ce point", skyBack: "Retour", skyBackD: "Revenir à la carte",
+        skyDrag: "Glissez pour tourner le ciel", skyDay: "Il fait jour ici · les étoiles sortent après le coucher du soleil" },
+  es: { findLbl: "Buscar un lugar", findH: "Buscar", findPh: "Ciudad, barrio o monumento", findNone: "No se encontró el lugar", findErr: "La búsqueda no está disponible", findSearching: "Buscando…",
+        skyLook: "Mirar al cielo", skyLookD: "El cielo real sobre este punto", skyBack: "Volver", skyBackD: "Volver al mapa",
+        skyDrag: "Arrastra para girar el cielo", skyDay: "Aquí es de día · las estrellas salen tras el atardecer" },
+  zh: { findLbl: "搜索地点", findH: "搜索", findPh: "城市、街区或地标", findNone: "未找到地点", findErr: "搜索暂时不可用", findSearching: "搜索中…",
+        skyLook: "抬头看", skyLookD: "此地上空的真实星空", skyBack: "返回", skyBackD: "返回地图",
+        skyDrag: "拖动以转动天空", skyDay: "此地现在是白天 · 日落后才能看到星星" },
+  ar: { findLbl: "ابحث عن مكان", findH: "بحث", findPh: "مدينة أو حي أو معلم", findNone: "لم يُعثر على المكان", findErr: "البحث غير متاح الآن", findSearching: "جارٍ البحث…",
+        skyLook: "انظر إلى السماء", skyLookD: "السماء الحقيقية فوق هذا المكان", skyBack: "رجوع", skyBackD: "العودة إلى الخريطة",
+        skyDrag: "اسحب لتدوير السماء", skyDay: "النهار هنا · تظهر النجوم بعد الغروب" },
+  de: { findLbl: "Ort suchen", findH: "Suchen", findPh: "Stadt, Viertel oder Bauwerk", findNone: "Kein Ort gefunden", findErr: "Die Suche ist gerade nicht verfügbar", findSearching: "Suche…",
+        skyLook: "Nach oben sehen", skyLookD: "Der echte Himmel über diesem Ort", skyBack: "Zurück", skyBackD: "Zurück zur Karte",
+        skyDrag: "Ziehen, um den Himmel zu drehen", skyDay: "Hier ist Tag · die Sterne kommen nach Sonnenuntergang" },
+};
+for (const k in L31) Object.assign(L[k], L31[k]);
+// [3.2] Ay
+{ const M = {
+  en: ["The Moon", "The real Moon, at its true position in the sky"],
+  tr: ["Ay", "Gerçek Ay, gökyüzündeki gerçek konumunda"],
+  it: ["La Luna", "La Luna reale, nella sua posizione effettiva nel cielo"],
+  ru: ["Луна", "Настоящая Луна в её истинном положении на небе"],
+  fr: ["La Lune", "La Lune réelle, à sa position exacte dans le ciel"],
+  es: ["La Luna", "La Luna real, en su posición verdadera en el cielo"],
+  zh: ["月球", "真实的月球，位于天空中的真实位置"],
+  ar: ["القمر", "القمر الحقيقي في موضعه الفعلي في السماء"],
+  de: ["Der Mond", "Der echte Mond, an seiner wahren Position am Himmel"] };
+  for (const k in M) { L[k].sMoon = M[k][0]; L[k].sMoonD = M[k][1]; } }
 // [3.0] Haberin tamamı kaynağın kendi sitesinde okunur
 { const R = { en: (h) => `Read the full story at ${h} ↗`, tr: (h) => `Haberin tamamını ${h} sitesinde oku ↗`,
     it: (h) => `Leggi l'articolo completo su ${h} ↗`, ru: (h) => `Читать полностью на ${h} ↗`,
@@ -1753,7 +1849,7 @@ const PROFILE = (() => { const coarse = matchMedia("(pointer:coarse)").matches, 
 const DPR = window.devicePixelRatio || 1;
 const RES = Math.min(DPR, { phone: 1.0, tablet: 1.25, desktop: 1.5 }[PROFILE]);
 // [2.6] Ayarlar: cihazda hatırlanır
-const SET = Object.assign({ clouds: true, night: true, sun: true, atmo: true, rotate: PROFILE !== "phone", quality: "balanced", anim: true, sound: true },
+const SET = Object.assign({ clouds: true, night: true, sun: true, moon: true, atmo: true, rotate: PROFILE !== "phone", quality: "balanced", anim: true, sound: true },
   (() => { try { return JSON.parse(localStorage.getItem("wm-set") || "{}") || {}; } catch { return {}; } })());
 const QUAL = {
   saver: { res: 1.0, sse: 2.4, tiles: 20, cache: 120, note: "qSaverN" },
@@ -1836,8 +1932,12 @@ function fxFade() {
   scene.requestRender();
 }
 viewer.camera.changed.addEventListener(fxFade);
+// [3.2] Ay: Cesium'un kendi Moon katmanı. Konumu takvimden (viewer.clock) hesaplanır — syncSun() dakikada bir
+//      saati güncellediği için Ay da gerçek zamanlı doğru yerde durur. Dokusu NASA görüntüsüdür ve kütüphaneyle gelir.
+try { scene.moon = new Cesium.Moon({ onlySunLighting: true }); } catch {}
 function applyLook() {
   scene.globe.enableLighting = !!SET.sun; scene.skyAtmosphere.show = !!SET.atmo;
+  if (scene.moon) scene.moon.show = !!SET.moon;
   fxAlphaLast = -1; fxFade(); scene.requestRender();
 }
 applyLook();
@@ -1859,7 +1959,7 @@ const userTouched = () => { idleSpinFrom = performance.now() + IDLE_MS; };
 ["pointerdown", "wheel", "touchstart"].forEach((ev) => scene.canvas.addEventListener(ev, userTouched, { passive: true }));
 scene.preRender.addEventListener(() => {
   const now = performance.now(), dt = Math.min(0.05, (now - (lastSpinT || now)) / 1000); lastSpinT = now;
-  if (!SET.rotate || now < idleSpinFrom || !$("card").hidden || document.body.classList.contains("engaged") || $("splash")) return;
+  if (!SET.rotate || now < idleSpinFrom || !$("card").hidden || document.body.classList.contains("engaged") || document.body.classList.contains("skymode") || $("splash")) return;
   if (viewer.camera.positionCartographic.height < 4000000) return;
   viewer.camera.rotate(Cesium.Cartesian3.UNIT_Z, -SPIN_RAD_S * dt);
   scene.requestRender();
@@ -1947,6 +2047,13 @@ function loadTiles() {
 // Dünya küresi HER ZAMAN çizilir. Yalnızca çok yakında (30 km altı) ve 3D binalar ekranı tamamen doldurunca küre binaların altına çekilir.
 var nearCovered = false;   // [2.3] disengage'den erişilebilir
 function sync3D() {
+  // [3.3] Gökyüzü modunda binalar kapalı: 2 m göz hizasında bina ağının içine girip gökyüzünü kapatmasın
+  if (document.body.classList.contains("skymode")) {
+    if (tiles) tiles.show = false;
+    if (!scene.globe.show) scene.globe.show = true;
+    if (tilesOn) { tilesOn = false; scene.requestRender(); }
+    return;
+  }
   if (!tilesP && viewer.camera.positionCartographic.height < NEAR_3D) loadTiles();
   const near = !!tiles && viewer.camera.positionCartographic.height < NEAR_3D;
   if (!near) nearCovered = false;
@@ -1961,7 +2068,7 @@ scene.globe.show = true;
 // Kamera yere çok yaklaşınca (binalar varken küre gizliyken) yerin altına girmesin
 let groundRef = 0;
 scene.preRender.addEventListener(() => {
-  if (!tilesOn) return;
+  if (!tilesOn || document.body.classList.contains("skymode")) return;   // [3.3] gökyüzü modunun kendi kamerası var
   const c = viewer.camera.positionCartographic;
   if (c.height < groundRef + 25) { viewer.camera.setView({ destination: Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, groundRef + 25), orientation: { heading: viewer.camera.heading, pitch: Math.min(viewer.camera.pitch, -0.15), roll: 0 } }); }
 });
@@ -2766,6 +2873,7 @@ function renderStatic() {
   document.querySelectorAll("[data-ia]").forEach((el) => el.setAttribute("aria-label", T(el.dataset.ia)));
   document.querySelectorAll("[data-i]").forEach((el) => (el.textContent = T(el.dataset.i)));
   $("q").placeholder = T("search");
+  $("fq").placeholder = T("findPh");
 
   if (!$("upd").textContent) $("upd").textContent = T("connecting");
 }
@@ -2855,7 +2963,7 @@ function cardGeom() {
 function placeCard(force) {
   const card = $("card"); if (card.parentNode !== document.body) document.body.appendChild(card);
   const on = !!S.sel && S.events.has(S.sel);
-  if (!on) { card.hidden = true; card.classList.remove("held"); cardKey = ""; document.body.classList.remove("cardon"); syncHudOut(); return; }
+  if (!on) { card.hidden = true; card.classList.remove("held"); cardKey = ""; document.body.classList.remove("cardon"); syncHudOut(); syncSkyBtn(); return; }
   const g = cardGeom();
   const key = `${S.sel}|${g.mode}|${document.body.classList.contains("engaged")}|${innerWidth}x${innerHeight}`;
   if (!force && key === cardKey && !card.hidden) return;
@@ -2867,7 +2975,7 @@ function placeCard(force) {
   card.hidden = false; card.classList.add("held"); document.body.classList.add("cardon");
   if (fresh && card.animate && !matchMedia("(prefers-reduced-motion: reduce)").matches)
     card.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.7,.2,1)" });
-  syncHudOut();
+  syncHudOut(); syncSkyBtn();
 }
 // Tutamaç: köşeden (masaüstü) ya da üst kenardan (telefon) sürükleyerek büyüt/küçült
 (() => {
@@ -2980,7 +3088,7 @@ addEventListener("resize", () => { if (!PANEL.hidden) panelPos = placePanel(pane
 $("listBtn").addEventListener("click", toggleSheet);
 // [2.6] Ayarlar paneli
 (() => {
-  const box = $("settings"), btn = $("setBtn"), KEYS = ["clouds", "night", "sun", "atmo", "rotate", "anim", "sound"];
+  const box = $("settings"), btn = $("setBtn"), KEYS = ["clouds", "night", "sun", "moon", "atmo", "rotate", "anim", "sound"];
   const save = () => { try { localStorage.setItem("wm-set", JSON.stringify(SET)); } catch {} };
   const sync = () => {
     for (const k of KEYS) $("s_" + k).checked = !!SET[k];
@@ -3432,6 +3540,7 @@ picker.addEventListener("click", (e) => {
 });
 const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
 handler.setInputAction((click) => {
+  if (document.body.classList.contains("skymode")) return;   // [3.3] gökyüzünde haber seçilmez
   picker.hidden = true;
   let picks = [];
   try { picks = scene.drillPick(click.position, 25, 26, 26); } catch { const p = scene.pick(click.position); if (p) picks = [p]; }
@@ -4545,6 +4654,207 @@ let hintT = 0;
 function showHint(s) { const h = $("ssHint"); if (!h) return; h.textContent = s; h.hidden = false; h.classList.remove("on"); void h.offsetWidth; h.classList.add("on"); clearTimeout(hintT); hintT = setTimeout(() => { h.hidden = true; }, 5200); }
 addEventListener("resize", () => { if (SUN.mode === "sun" || SUN.mode === "travel") { skyDefaults(); skyKick(); } });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) skyKick(); });
+
+/* ===================== [3.3] Yer arama + gökyüzü modu =====================
+   Kullanıcı bir yer adı yazar, Photon sonuçları gelir, seçilen yere uçulur.
+   Sonra "Yukarı bak": kamera zeminin 2 m üstüne iner ve göğe çevrilir.
+   Gökyüzünü Cesium'un kendisi çizer (skyBox yıldızları, scene.moon, atmosfer);
+   saat syncSun() ile gerçek zamanlı olduğu için görünen gök o anın gerçek göğüdür. */
+
+/* Arama, haber konumlandırmanın kalıcı PH önbelleğine YAZMAZ: orası ayrı bir iş.
+   limit=1 yerine birkaç sonuç döner ki kullanıcı doğru olanı seçebilsin. */
+const PHOTON_LANG = { en: "en", de: "de", fr: "fr", it: "it" };   // Photon'un desteklediği diller
+async function photonFind(q, near) {
+  let url = "https://photon.komoot.io/api/?limit=7&lang=" + (PHOTON_LANG[LANG] || "en") + "&q=" + encodeURIComponent(q);
+  if (near && isFinite(near.lat) && isFinite(near.lon)) url += `&lat=${near.lat.toFixed(4)}&lon=${near.lon.toFixed(4)}`;
+  const j = await getJSON(url, 9000);
+  const out = [], seen = new Set();
+  for (const f of j.features || []) {
+    const c = f.geometry?.coordinates, pr = f.properties || {};
+    if (!c || !isFinite(c[0]) || !isFinite(c[1]) || Math.abs(c[1]) > 90) continue;
+    const name = pr.name || [pr.street, pr.housenumber].filter(Boolean).join(" ") || pr.city || pr.state || pr.country;
+    if (!name) continue;
+    const where = [pr.district, pr.city && pr.city !== name ? pr.city : null, pr.state, pr.country].filter(Boolean).join(", ");
+    const k = norm(name) + "|" + norm(where); if (seen.has(k)) continue; seen.add(k);
+    out.push({ lat: c[1], lon: c[0], name, where, type: pr.type || "", key: pr.osm_key || "" });
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+/* Arama paneli */
+const FIND = (() => {
+  const box = $("find"), btn = $("findBtn"), input = $("fq"), res = $("fres");
+  let timer = 0, run = 0, list = [];
+  const msg = (t) => { list = []; res.innerHTML = `<li class="fmsg">${esc(t)}</li>`; };
+  const show = (o) => {
+    if (!box.hidden === !!o) { if (o) input.focus({ preventScroll: true }); return; }
+    box.hidden = !o; btn.setAttribute("aria-pressed", String(!!o));
+    if (o) { input.focus({ preventScroll: true }); input.select(); }
+    else { clearTimeout(timer); run++; }
+  };
+  async function search(q) {
+    const me = ++run;
+    msg(T("findSearching"));
+    let r = null, err = false;
+    try { r = await photonFind(q, lookPoint()); } catch { err = true; }
+    if (me !== run || box.hidden) return;
+    if (err) { msg(T("findErr")); return; }
+    if (!r || !r.length) { msg(T("findNone")); return; }
+    list = r;
+    res.innerHTML = r.map((x, i) => `<li><button type="button" data-fi="${i}"><b>${esc(x.name)}</b>${x.where ? `<small>${esc(x.where)}</small>` : ""}</button></li>`).join("");
+  }
+  const go = () => { clearTimeout(timer); const q = input.value.trim(); if (q.length >= 2) search(q); };
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { run++; list = []; res.innerHTML = ""; return; }
+    timer = setTimeout(go, 350);                                   // yazarken her harfte istek atılmaz
+  });
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); go(); } });
+  res.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-fi]"); if (!b) return;
+    const place = list[+b.dataset.fi]; if (!place) return;
+    show(false); flyToPlace(place);
+  });
+  btn.addEventListener("click", () => {
+    if (SUN.mode !== "earth") return;
+    $("settings").hidden = true; $("setBtn").setAttribute("aria-pressed", "false");   // iki panel aynı köşede
+    show(box.hidden);
+  });
+  $("findClose").addEventListener("click", () => show(false));
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && !box.hidden) show(false); });
+  scene.canvas.addEventListener("pointerdown", () => show(false), { passive: true });
+  return { show };
+})();
+$("setBtn").addEventListener("click", () => FIND.show(false));     // iki panel aynı köşede: biri açılırken öteki kapanır
+
+/* Seçilen yere uçuş */
+let SKYPLACE = null;
+async function flyToPlace(place) {
+  if (SUN.mode !== "earth" || SKYM.on) return;
+  const job = ++mission;                                           // süren haber yaklaşmasını iptal et (run() akış işlevi ile karışmasın)
+  leaveHud();
+  if (S.sel) closeSel();
+  if (matchMedia("(max-width:760px)").matches && !PANEL.hidden) setPanel(false);
+  SKYPLACE = place; syncSkyBtn();
+  const k = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0.2 : 1;
+  const ground = await groundAt(place.lat, place.lon);
+  if (job !== mission) return;
+  groundRef = ground || 0;
+  loadTiles();
+  userTouched();
+  await flyP({ destination: Cesium.Cartesian3.fromDegrees(place.lon, place.lat, (ground || 0) + 2000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-52), roll: 0 },
+    duration: 3.6 * k, easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT });
+  if (job !== mission) return;
+  userTouched(); syncSkyBtn();
+}
+
+/* Gökyüzü modu */
+const SKYM = { on: false, heading: 0, pitch: 0, eye: null, back: null, ctl: null, atm: null, ht: 0 };
+const SKY_SVG = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><defs><linearGradient id="zg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#3fd3f5"/></linearGradient></defs>
+  <path d="M2.8 26c4.1-3.3 8.5-4.9 13.2-4.9S25.1 22.7 29.2 26" stroke="url(#zg4)" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M10.2 4.6 11.3 7.9l3.3 1.1-3.3 1.1-1.1 3.3-1.1-3.3L5.8 9l3.3-1.1 1.1-3.3Z" fill="url(#zg4)"/>
+  <path d="M21.6 11 22.4 13.4l2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8.8-2.4Z" fill="url(#zg4)"/>
+  <circle cx="15.4" cy="17.2" r="1.15" fill="url(#zg4)"/></svg>`;
+function skyBtnHTML() {
+  $("skyLook").innerHTML = `${SKY_SVG}<span class="zw"><span class="zt gx" data-t="${esc(T("skyLook"))}">${esc(T("skyLook"))}</span><small>${esc(T("skyLookD"))}</small></span>`;
+  $("skyOut").innerHTML = `${ZO_SVG.replace(/zg2/g, "zg5")}<span class="zw"><span class="zt gx" data-t="${esc(T("skyBack"))}">${esc(T("skyBack"))}</span><small>${esc(T("skyBackD"))}</small></span>`;
+}
+function syncSkyBtn() {
+  const b = $("skyLook"); if (!b) return;
+  const on = !!SKYPLACE && !SKYM.on && SUN.mode === "earth" && $("card").hidden && !$("splash")
+    && !document.body.classList.contains("engaged")
+    && viewer.camera.positionCartographic.height < 14000;
+  if (b.hidden === !on) return;
+  b.hidden = !on;
+}
+// Olay yerinde güneş ufkun üstünde mi? (gündüzse yıldızlar görünmez; kullanıcıya söylenir)
+function isDaylight(pt) {
+  try {
+    const here = Cesium.Cartesian3.fromDegrees(pt.lon, pt.lat, 0);
+    const up = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(here, new Cesium.Cartesian3());
+    const d = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(sunPosWC(), here, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+    return Cesium.Cartesian3.dot(up, d) > -0.105;                  // ≈ −6°: sivil alacakaranlık da aydınlık sayılır
+  } catch { return false; }
+}
+function skyView() {
+  const e = SKYM.eye; if (!e) return;
+  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(e.lon, e.lat, e.h),
+    orientation: { heading: SKYM.heading, pitch: SKYM.pitch, roll: 0 } });
+  scene.requestRender();
+}
+async function skyEnter() {
+  const place = SKYPLACE;
+  if (SKYM.on || !place || SUN.mode !== "earth") return;
+  SKYM.on = true; $("skyLook").hidden = true;
+  ++mission; leaveHud();
+  if (S.sel) closeSel();
+  if (!PANEL.hidden) setPanel(false);
+  FIND.show(false);
+  $("settings").hidden = true; $("setBtn").setAttribute("aria-pressed", "false");
+  const c = viewer.camera.positionCartographic;
+  SKYM.back = { lon: Cesium.Math.toDegrees(c.longitude), lat: Cesium.Math.toDegrees(c.latitude), h: c.height,
+    heading: viewer.camera.heading, pitch: viewer.camera.pitch, roll: viewer.camera.roll };
+  const ground = await groundAt(place.lat, place.lon);
+  if (!SKYM.on) return;                                            // bu sırada vazgeçildiyse
+  groundRef = ground || 0;
+  SKYM.eye = { lat: place.lat, lon: place.lon, h: (ground || 0) + 2 };
+  SKYM.heading = 0; SKYM.pitch = Cesium.Math.toRadians(78);
+  document.body.classList.add("skymode");
+  const ctl = scene.screenSpaceCameraController;                   // Cesium'un kendi kontrolleri yerden yukarı bakarken tuhaf davranır
+  SKYM.ctl = { rotate: ctl.enableRotate, translate: ctl.enableTranslate, zoom: ctl.enableZoom, tilt: ctl.enableTilt, look: ctl.enableLook };
+  ctl.enableRotate = ctl.enableTranslate = ctl.enableZoom = ctl.enableTilt = ctl.enableLook = false;
+  const sa = scene.skyAtmosphere;                                  // uzaydan bakmak için ayarlı parlaklık, yerden bakınca yıldızları yıkar
+  SKYM.atm = { hue: sa.hueShift, sat: sa.saturationShift, br: sa.brightnessShift, li: sa.atmosphereLightIntensity };
+  sa.hueShift = 0; sa.saturationShift = 0; sa.brightnessShift = 0;
+  try { sa.atmosphereLightIntensity = 10; } catch {}
+  sync3D(); skyView();
+  const day = isDaylight(place);
+  const h = $("skyHint");
+  h.innerHTML = `<b>${esc(place.name)}</b>${esc(day ? T("skyDay") : T("skyDrag"))}`;
+  h.hidden = false; clearTimeout(SKYM.ht); SKYM.ht = setTimeout(() => (h.hidden = true), day ? 8000 : 6000);
+  $("skyOut").hidden = false;
+  scene.requestRender();
+}
+function skyLeave() {
+  if (!SKYM.on) return;
+  SKYM.on = false;
+  document.body.classList.remove("skymode", "skydrag");
+  $("skyOut").hidden = true; $("skyHint").hidden = true; clearTimeout(SKYM.ht);
+  const ctl = scene.screenSpaceCameraController, k = SKYM.ctl;
+  if (k) { ctl.enableRotate = k.rotate; ctl.enableTranslate = k.translate; ctl.enableZoom = k.zoom; ctl.enableTilt = k.tilt; ctl.enableLook = k.look; }
+  const a = SKYM.atm, sa = scene.skyAtmosphere;
+  if (a) { sa.hueShift = a.hue; sa.saturationShift = a.sat; sa.brightnessShift = a.br; try { sa.atmosphereLightIntensity = a.li; } catch {} }
+  const b = SKYM.back;
+  if (b) viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(b.lon, b.lat, b.h), orientation: { heading: b.heading, pitch: b.pitch, roll: b.roll } });
+  userTouched(); sync3D(); syncSkyBtn(); scene.requestRender();
+}
+/* Gökyüzünü sürükleme: parmağın altındaki gök parmağı izler, kamera yerinde kalır */
+(() => {
+  const cv = scene.canvas; let d = null;
+  const stop = () => { if (!d) return; d = null; document.body.classList.remove("skydrag"); };
+  cv.addEventListener("pointerdown", (e) => {
+    if (!SKYM.on) return;
+    d = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    document.body.classList.add("skydrag");
+    try { cv.setPointerCapture(e.pointerId); } catch {}
+  });
+  cv.addEventListener("pointermove", (e) => {
+    if (!d || !SKYM.on || e.pointerId !== d.id) return;
+    const k = (viewer.camera.frustum.fovy || 1) / Math.max(1, cv.clientHeight);
+    SKYM.heading -= (e.clientX - d.x) * k;
+    SKYM.pitch = Math.max(Cesium.Math.toRadians(1.5), Math.min(Cesium.Math.toRadians(88.5), SKYM.pitch + (e.clientY - d.y) * k));
+    d.x = e.clientX; d.y = e.clientY;
+    skyView();
+  });
+  cv.addEventListener("pointerup", stop); cv.addEventListener("pointercancel", stop); cv.addEventListener("lostpointercapture", stop);
+})();
+$("skyLook").addEventListener("click", skyEnter);
+$("skyOut").addEventListener("click", skyLeave);
+addEventListener("keydown", (e) => { if (e.key === "Escape" && SKYM.on) skyLeave(); });
+viewer.camera.moveEnd.addEventListener(syncSkyBtn);
+skyBtnHTML();
 
 /* ---------- Mini logo: girişteki sinematik küreyle aynı stil; bir kez çizilir (sürekli yeniden çizim yok) ---------- */
 function miniLogo(cv) { try { window.WMOrb && window.WMOrb.paintStatic(cv); } catch {} }
